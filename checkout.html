@@ -99,7 +99,7 @@
         const product = products[item.id];
         if (!product) return '';
         total += product[1] * item.qty;
-        return `<div class="summary-line"><span>${product[0]} x ${item.qty}</span><span>${money(product[1] * item.qty)}</span></div>`;
+        return `<div class="summary-line"><span>${product[0]}${item.size ? ` - Tam. ${item.size}` : ''} x ${item.qty}</span><span>${money(product[1] * item.qty)}</span></div>`;
       }).join('') || '<p>Sacola vazia.</p>';
       const coupon = document.querySelector('#coupon')?.value.trim().toUpperCase();
       const discount = coupon === 'DUUM10' ? Number((total * 0.1).toFixed(2)) : 0;

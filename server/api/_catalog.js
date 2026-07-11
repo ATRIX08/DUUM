@@ -21,6 +21,7 @@ function normalizeCart(rawCart) {
   const normalized = rawCart.map(item => {
     const id = Number(item.id);
     const qty = Number(item.qty);
+    const size = String(item.size || 'M').trim().slice(0, 8).toUpperCase();
     const product = productMap.get(id);
 
     if (!product || !Number.isInteger(qty) || qty < 1 || qty > 20) {
@@ -29,11 +30,12 @@ function normalizeCart(rawCart) {
 
     return {
       id: product.id,
-      title: product.name,
+      title: `${product.name} - Tam. ${size}`,
       quantity: qty,
       unit_price: Number(product.price.toFixed(2)),
       currency_id: 'BRL',
-      picture_url: product.image
+      picture_url: product.image,
+      size
     };
   });
 

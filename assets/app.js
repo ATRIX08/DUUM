@@ -17,11 +17,15 @@ if (legacyCart && !localStorage.getItem('duum_cart')) localStorage.setItem('duum
 const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 let cart = JSON.parse(localStorage.getItem('duum_cart') || '[]');
 let account = JSON.parse(localStorage.getItem('duum_account') || 'null');
+let currentCategory = 'todos';
+let currentSize = 'todos';
 
 const grid = document.querySelector('#productGrid');
 const cartDrawer = document.querySelector('#cartDrawer');
 const overlay = document.querySelector('#overlay');
 const accountDialog = document.querySelector('#accountDialog');
+const accountMenu = document.querySelector('#accountMenu');
+const defaultSizes = ['P', 'M', 'G', 'GG'];
 
 function safeText(text) {
   const el = document.createElement('span');
@@ -29,21 +33,30 @@ function safeText(text) {
   return el.innerHTML;
 }
 
-function renderProducts(filter = 'todos') {
-  const list = filter === 'todos' ? products : products.filter(product => product.category === filter);
+function productSizes(product) {
+  return Array.isArray(product.sizes) && product.sizes.length ? product.sizes : defaultSizes;
+}
+
+function renderProducts() {
+  const list = products.filter(product => {
+    const categoryMatch = currentCategory === 'todos' || product.category === currentCategory;
+    const sizeMatch = currentSize === 'todos' || productSizes(product).includes(currentSize);
+    return categoryMatch && sizeMatch;
+  });
   grid.innerHTML = list.map(product => `
     <article class="product-card" data-category="${product.category}">
       <div class="product-image" style="background-image:url('${product.image}')"><span class="tag">${safeText(product.tag)}</span></div>
       <div class="product-info">
         <h3>${safeText(product.name)}</h3>
         <div class="price">${product.old ? `<span class="old">${money(product.old)}</span>` : ''}<strong>${money(product.price)}</strong></div>
+        <div class="product-sizes">${productSizes(product).map(size => `<span>${safeText(size)}</span>`).join('')}</div>
         <small class="stock-note">${Number(product.stock || 0) > 0 ? `${product.stock} disponiveis` : 'Indisponivel'}</small>
         <div class="product-actions">
           <button data-view="${product.id}">Detalhes</button>
-          <button class="add" data-add="${product.id}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>Adicionar</button>
+          <button class="add" data-add="${product.id}" data-size="${currentSize === 'todos' ? 'M' : safeText(currentSize)}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>Adicionar</button>
         </div>
       </div>
-    </article>`).join('');
+    </article>`).join('') || '<div class="empty catalog-empty">Nenhuma roupa encontrada nesse tamanho.</div>';
 }
 
 async function loadCatalog() {
@@ -66,21 +79,21 @@ function saveCart() {
   renderCart();
 }
 
-function addToCart(id) {
+function addToCart(id, size = 'M') {
   const product = products.find(entry => entry.id === id);
   if (product && Number(product.stock || 0) <= 0) {
     alert('Produto indisponivel no momento.');
     return;
   }
-  const item = cart.find(product => product.id === id);
+  const item = cart.find(product => product.id === id && product.size === size);
   if (item) item.qty += 1;
-  else cart.push({id, qty:1, size:'M'});
+  else cart.push({id, qty:1, size});
   saveCart();
   openCart();
 }
 
-function removeFromCart(id) {
-  cart = cart.filter(item => item.id !== id);
+function removeFromCart(id, size) {
+  cart = cart.filter(item => !(item.id === id && item.size === size));
   saveCart();
 }
 
@@ -93,7 +106,7 @@ function renderCart() {
     wrap.innerHTML = cart.map(item => {
       const product = products.find(entry => entry.id === item.id);
       if (!product) return '';
-      return `<div class="cart-item"><img src="${product.image}" alt=""><div><h4>${safeText(product.name)}</h4><small>Tamanho ${item.size} | Qtd. ${item.qty}</small><p>${money(product.price * item.qty)}</p></div><button class="remove" data-remove="${product.id}" aria-label="Remover">Remover</button></div>`;
+      return `<div class="cart-item"><img src="${product.image}" alt=""><div><h4>${safeText(product.name)}</h4><small>Tamanho ${safeText(item.size)} | Qtd. ${item.qty}</small><p>${money(product.price * item.qty)}</p></div><button class="remove" data-remove="${product.id}" data-remove-size="${safeText(item.size)}" aria-label="Remover">Remover</button></div>`;
     }).join('');
   }
   const total = cart.reduce((sum, item) => {
@@ -119,6 +132,20 @@ function updateAccountUi() {
   const button = document.querySelector('#accountBtn');
   button.textContent = account?.name ? account.name.split(' ')[0] : 'Entrar';
   document.querySelector('#logoutBtn').hidden = !account;
+  document.querySelector('#accountMenuName').textContent = account?.name ? account.name : 'Minha conta';
+}
+
+function closeAccountMenu() {
+  accountMenu.hidden = true;
+}
+
+function toggleAccountMenu() {
+  if (!account) {
+    setAuthMode('login');
+    accountDialog.showModal();
+    return;
+  }
+  accountMenu.hidden = !accountMenu.hidden;
 }
 
 function setAuthMode(mode) {
@@ -168,35 +195,70 @@ async function submitAuth(event) {
 
 function openProduct(id) {
   const product = products.find(entry => entry.id === id);
-  document.querySelector('#dialogContent').innerHTML = `<div class="dialog-product"><img src="${product.image}" alt="${safeText(product.name)}"><div class="dialog-details"><span class="eyebrow">${safeText(product.tag)}</span><h2>${safeText(product.name)}</h2><h3>${money(product.price)}</h3><p>${safeText(product.description)}</p><p><strong>Escolha o tamanho</strong></p><div class="size-list"><button>P</button><button>M</button><button>G</button><button>GG</button></div><button class="checkout-btn" data-add="${product.id}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>${Number(product.stock || 0) > 0 ? 'Adicionar a sacola' : 'Indisponivel'}</button><small>Prazo e disponibilidade confirmados no checkout.</small></div></div>`;
+  const sizes = productSizes(product);
+  const selectedSize = currentSize === 'todos' || !sizes.includes(currentSize) ? sizes[0] : currentSize;
+  document.querySelector('#dialogContent').innerHTML = `<div class="dialog-product"><img src="${product.image}" alt="${safeText(product.name)}"><div class="dialog-details"><span class="eyebrow">${safeText(product.tag)}</span><h2>${safeText(product.name)}</h2><h3>${money(product.price)}</h3><p>${safeText(product.description)}</p><p><strong>Escolha o tamanho</strong></p><div class="size-list">${sizes.map(size => `<button class="${size === selectedSize ? 'active' : ''}" data-size-select="${safeText(size)}">${safeText(size)}</button>`).join('')}</div><button class="checkout-btn" data-add="${product.id}" data-size="${safeText(selectedSize)}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>${Number(product.stock || 0) > 0 ? 'Adicionar a sacola' : 'Indisponivel'}</button><small>Prazo e disponibilidade confirmados no checkout.</small></div></div>`;
   document.querySelector('#productDialog').showModal();
 }
 
 document.addEventListener('click', event => {
   const add = event.target.closest('[data-add]');
-  if (add) addToCart(Number(add.dataset.add));
+  if (add) addToCart(Number(add.dataset.add), add.dataset.size || 'M');
 
   const view = event.target.closest('[data-view]');
   if (view) openProduct(Number(view.dataset.view));
 
   const remove = event.target.closest('[data-remove]');
-  if (remove) removeFromCart(Number(remove.dataset.remove));
+  if (remove) removeFromCart(Number(remove.dataset.remove), remove.dataset.removeSize || 'M');
+
+  const sizeSelect = event.target.closest('[data-size-select]');
+  if (sizeSelect) {
+    document.querySelectorAll('[data-size-select]').forEach(button => button.classList.remove('active'));
+    sizeSelect.classList.add('active');
+    const addButton = document.querySelector('#productDialog [data-add]');
+    if (addButton) addButton.dataset.size = sizeSelect.dataset.sizeSelect;
+  }
+
+  if (!event.target.closest('.header-actions')) closeAccountMenu();
 });
 
 document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => {
   document.querySelectorAll('.filter').forEach(item => item.classList.remove('active'));
   button.classList.add('active');
-  renderProducts(button.dataset.filter);
+  currentCategory = button.dataset.filter;
+  renderProducts();
+}));
+
+document.querySelectorAll('.size-filter-btn').forEach(button => button.addEventListener('click', () => {
+  document.querySelectorAll('.size-filter-btn').forEach(item => item.classList.remove('active'));
+  button.classList.add('active');
+  currentSize = button.dataset.sizeFilter;
+  renderProducts();
 }));
 
 document.querySelector('#cartBtn').addEventListener('click', openCart);
-document.querySelector('#accountBtn').addEventListener('click', () => {
-  setAuthMode(account ? 'login' : 'login');
-  if (account) {
-    document.querySelector('#authEmail').value = account.email || '';
-    document.querySelector('#authStatus').textContent = `Voce esta conectado como ${account.email}.`;
+document.querySelector('#accountBtn').addEventListener('click', toggleAccountMenu);
+accountMenu.addEventListener('click', event => {
+  const action = event.target.closest('[data-account-action]')?.dataset.accountAction;
+  if (!action) return;
+  if (action === 'logout') {
+    account = null;
+    localStorage.removeItem('duum_account');
+    updateAccountUi();
+    closeAccountMenu();
+    return;
   }
-  accountDialog.showModal();
+  if (action === 'track' || action === 'orders') {
+    window.location.href = 'pedido.html';
+    return;
+  }
+  if (action === 'profile') {
+    closeAccountMenu();
+    setAuthMode('login');
+    document.querySelector('#authEmail').value = account?.email || '';
+    document.querySelector('#authStatus').textContent = `Voce esta conectado como ${account?.email || 'cliente DUUM'}.`;
+    accountDialog.showModal();
+  }
 });
 document.querySelector('#closeCart').addEventListener('click', closeCart);
 overlay.addEventListener('click', closeCart);
@@ -209,6 +271,7 @@ document.querySelector('#logoutBtn').addEventListener('click', () => {
   account = null;
   localStorage.removeItem('duum_account');
   updateAccountUi();
+  closeAccountMenu();
   document.querySelector('#authStatus').textContent = 'Voce saiu da conta.';
 });
 document.querySelector('#authForm').addEventListener('submit', submitAuth);

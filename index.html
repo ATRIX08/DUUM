@@ -27,6 +27,13 @@
     <div class="header-actions">
       <button class="icon-btn" id="searchBtn" aria-label="Pesquisar">Buscar</button>
       <button class="icon-btn" id="accountBtn" aria-label="Entrar ou criar conta">Entrar</button>
+      <div class="account-menu" id="accountMenu" hidden>
+        <strong id="accountMenuName">Minha conta</strong>
+        <button data-account-action="orders">Compras e pedidos</button>
+        <button data-account-action="track">Rastrear pedido</button>
+        <button data-account-action="profile">Dados da conta</button>
+        <button data-account-action="logout">Sair</button>
+      </div>
       <button class="cart-btn" id="cartBtn" aria-label="Abrir carrinho">Sacola <span id="cartCount">0</span></button>
     </div>
   </header>
@@ -67,6 +74,14 @@
           <button class="filter" data-filter="feminino">Feminino</button>
           <button class="filter" data-filter="masculino">Masculino</button>
         </div>
+      </div>
+      <div class="size-filter" role="group" aria-label="Filtrar por tamanho">
+        <span>Tamanho</span>
+        <button class="size-filter-btn active" data-size-filter="todos">Todos</button>
+        <button class="size-filter-btn" data-size-filter="P">P</button>
+        <button class="size-filter-btn" data-size-filter="M">M</button>
+        <button class="size-filter-btn" data-size-filter="G">G</button>
+        <button class="size-filter-btn" data-size-filter="GG">GG</button>
       </div>
       <div class="product-grid" id="productGrid"></div>
     </section>

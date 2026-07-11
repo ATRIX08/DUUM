@@ -28,12 +28,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .header nav a,.back-link,footer a{color:inherit;text-decoration:none}
 .header nav a,.back-link{font-size:14px;font-weight:700;color:#303642}
 .header nav a:hover,.back-link:hover{color:var(--accent)}
-.header-actions{display:flex;align-items:center;gap:10px}
+.header-actions{display:flex;align-items:center;gap:10px;position:relative}
 .icon-btn,.cart-btn,.menu-btn{border:0;background:transparent;cursor:pointer;color:var(--ink);font-weight:800}
 .icon-btn{padding:11px 14px;border:1px solid #cfd8dc;background:#fff;border-radius:4px}
 .icon-btn:hover{border-color:var(--cta);color:var(--cta);transform:translateY(-1px);box-shadow:0 10px 22px rgba(17,19,24,.08)}
 #accountBtn{background:#fff7e8;border-color:#e8cda8;color:#6f421b}
 #accountBtn:hover{background:var(--warm);border-color:var(--warm);color:#fff;box-shadow:0 12px 24px rgba(197,139,75,.28)}
+.account-menu{position:absolute;right:98px;top:calc(100% + 12px);width:250px;background:#fff;border:1px solid var(--line);box-shadow:0 18px 44px rgba(17,19,24,.16);border-radius:8px;padding:10px;z-index:25}
+.account-menu:before{content:"";position:absolute;top:-7px;right:28px;width:12px;height:12px;background:#fff;border-left:1px solid var(--line);border-top:1px solid var(--line);transform:rotate(45deg)}
+.account-menu strong{display:block;padding:10px 10px 12px;border-bottom:1px solid var(--line);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account-menu button{width:100%;border:0;background:#fff;text-align:left;padding:12px 10px;border-radius:6px;font-weight:800;color:#303642;cursor:pointer}
+.account-menu button:hover{background:#eef4f5;color:var(--cta);transform:none}
 .cart-btn{background:linear-gradient(135deg,var(--cta),var(--cta-strong));color:#fff;border-radius:4px;padding:13px 18px;box-shadow:var(--button-shadow)}
 .cart-btn:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(31,122,140,.34)}
 .cart-btn span{background:#fff;color:var(--cta-strong);border-radius:999px;padding:2px 8px;margin-left:6px}
@@ -72,6 +77,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .filter{border:1px solid var(--line);background:#fff;padding:11px 16px;cursor:pointer;border-radius:4px;font-weight:800;color:#303642}
 .filter:hover{border-color:var(--cta);color:var(--cta);transform:translateY(-1px)}
 .filter.active{background:linear-gradient(135deg,var(--deep),var(--cta-strong));color:#fff;border-color:var(--cta-strong);box-shadow:0 10px 22px rgba(24,34,47,.16)}
+.size-filter{display:flex;align-items:center;gap:8px;margin:-16px 0 28px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 26px rgba(17,19,24,.05)}
+.size-filter span{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-right:4px}
+.size-filter-btn{width:44px;height:38px;border:1px solid #cfd8dc;background:#fff;border-radius:6px;font-weight:900;cursor:pointer;color:#303642}
+.size-filter-btn:hover{border-color:var(--cta);color:var(--cta);transform:translateY(-1px)}
+.size-filter-btn.active{background:var(--deep);border-color:var(--deep);color:#fff;box-shadow:0 10px 22px rgba(24,34,47,.14)}
 .product-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
 .product-card{background:#fff;border:1px solid var(--line);transition:transform .2s ease,box-shadow .2s ease}
 .product-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
@@ -81,6 +91,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .product-info h3{font-size:15px;margin:0 0 10px;line-height:1.35;min-height:40px}
 .price{display:flex;gap:8px;align-items:center}
 .old{color:#98a2b3;text-decoration:line-through;font-size:12px}
+.product-sizes{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.product-sizes span{display:inline-flex;align-items:center;justify-content:center;min-width:31px;height:28px;border:1px solid #d9dee8;background:#f8fafc;border-radius:5px;font-size:11px;font-weight:900;color:#344054}
 .stock-note{display:block;color:var(--muted);font-size:12px;margin-top:8px;min-height:16px}
 .product-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
 .product-actions button{min-height:44px;border:1px solid var(--ink);cursor:pointer;background:#fff;font-weight:800;border-radius:4px}
@@ -133,6 +145,7 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .dialog-details p{line-height:1.7;color:var(--muted)}
 .size-list{display:flex;gap:8px;margin:20px 0}
 .size-list button{width:44px;height:44px;background:#fff;border:1px solid #b8bec8;border-radius:4px;font-weight:800}
+.size-list button.active{background:var(--deep);border-color:var(--deep);color:#fff;box-shadow:0 10px 20px rgba(24,34,47,.16)}
 .account-dialog{width:min(520px,92vw);background:#fff;padding:38px}
 .account-dialog h2{font-size:34px;margin:10px 0}
 .account-dialog p{line-height:1.6;color:var(--muted)}
@@ -305,6 +318,8 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .header{height:auto;min-height:74px;display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 18px;background:rgba(255,255,255,.97)}
   .header nav{top:100%}
   .header-actions{grid-column:1/-1;width:100%;display:grid;grid-template-columns:1fr 1.15fr;gap:10px}
+  .account-menu{left:0;right:auto;top:calc(100% + 8px);width:min(100%,360px)}
+  .account-menu:before{left:34px;right:auto}
   #accountBtn{display:inline-flex;align-items:center;justify-content:center;background:#fff7e8;border-color:#e8cda8;color:#6f421b;box-shadow:0 10px 22px rgba(197,139,75,.14)}
   .cart-btn{width:100%;justify-content:center}
   .back-link{justify-self:end;align-self:center}
@@ -340,6 +355,8 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .section{padding:58px 18px}
   .section-heading{align-items:start;flex-direction:column}
   .filters{grid-template-columns:1fr}
+  .size-filter{align-items:stretch;display:grid;grid-template-columns:1fr repeat(5,44px);gap:7px;margin-top:-18px;overflow:auto}
+  .size-filter span{align-self:center;margin:0}
   .product-grid{grid-template-columns:1fr;gap:16px}
   .product-card{border-radius:8px;overflow:hidden}
   .product-image{height:330px}
@@ -377,6 +394,9 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .logo span{letter-spacing:.2em}
   .header-actions{gap:8px}
   #accountBtn,.cart-btn{font-size:13px}
+  .account-menu{width:100%}
+  .size-filter{grid-template-columns:1fr repeat(5,38px);padding:10px}
+  .size-filter-btn{width:38px}
   .hero{min-height:540px;padding:104px 14px 30px}
   .hero h1{font-size:52px}
   .hero p{line-height:1.62}
