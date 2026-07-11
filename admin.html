@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Admin DUUM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/admin.js" defer></script>
+</head>
+<body class="admin-body">
+  <header class="admin-top">
+    <a class="logo" href="index.html">DUUM<span>ADMIN</span></a>
+    <div class="admin-key">
+      <input id="adminSecret" type="password" placeholder="Chave admin" autocomplete="off">
+      <button id="saveSecret">Entrar</button>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+    <section class="admin-hero">
+      <div>
+        <span class="eyebrow">OPERACAO</span>
+        <h1>Painel DUUM</h1>
+        <p>Pedidos, fornecedores e catalogo em um lugar so.</p>
+      </div>
+      <p id="adminStatus" class="checkout-status" aria-live="polite"></p>
+    </section>
+
+    <nav class="admin-tabs" aria-label="Areas do painel">
+      <button class="admin-tab active" data-tab="orders">Pedidos</button>
+      <button class="admin-tab" data-tab="products">Produtos</button>
+      <button class="admin-tab" data-tab="suppliers">Fornecedores</button>
+    </nav>
+
+    <section class="admin-panel active" id="ordersPanel">
+      <div class="admin-panel-head">
+        <h2>Pedidos recentes</h2>
+        <button class="secondary-btn mini" id="refreshOrders">Atualizar</button>
+      </div>
+      <div class="admin-table" id="ordersTable"></div>
+      <div class="admin-detail" id="orderDetail"></div>
+    </section>
+
+    <section class="admin-panel" id="productsPanel">
+      <div class="admin-panel-head">
+        <h2>Catalogo</h2>
+        <button class="secondary-btn mini" id="refreshProducts">Atualizar</button>
+      </div>
+      <form class="admin-form" id="productForm">
+        <input name="id" type="number" min="1" placeholder="ID" required>
+        <input name="name" placeholder="Nome" required>
+        <input name="category" placeholder="Categoria">
+        <input name="price" type="number" step="0.01" min="0" placeholder="Preco" required>
+        <input name="old_price" type="number" step="0.01" min="0" placeholder="Preco antigo">
+        <input name="image_url" placeholder="URL da imagem">
+        <input name="supplier_id" type="number" min="1" placeholder="ID fornecedor">
+        <input name="supplier_cost" type="number" step="0.01" min="0" placeholder="Custo fornecedor">
+        <textarea name="description" placeholder="Descricao"></textarea>
+        <label class="checkline"><input name="active" type="checkbox" checked> Produto ativo</label>
+        <button class="checkout-btn" type="submit">Salvar produto</button>
+      </form>
+      <div class="admin-table" id="productsTable"></div>
+    </section>
+
+    <section class="admin-panel" id="suppliersPanel">
+      <div class="admin-panel-head">
+        <h2>Fornecedores</h2>
+        <button class="secondary-btn mini" id="refreshSuppliers">Atualizar</button>
+      </div>
+      <form class="admin-form" id="supplierForm">
+        <input name="id" type="number" min="1" placeholder="ID para editar">
+        <input name="name" placeholder="Nome do fornecedor" required>
+        <input name="contact_name" placeholder="Contato">
+        <input name="email" type="email" placeholder="E-mail">
+        <input name="phone" placeholder="Telefone">
+        <textarea name="notes" placeholder="Observacoes, prazos, link do catalogo"></textarea>
+        <button class="checkout-btn" type="submit">Salvar fornecedor</button>
+      </form>
+      <div class="admin-table" id="suppliersTable"></div>
+    </section>
+  </main>
+</body>
+</html>

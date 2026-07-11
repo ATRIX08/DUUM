@@ -1,14 +1,14 @@
 'use strict';
 
 const products = [
-  { id: 1, name: 'Vestido Midi Elegance', price: 149.90, image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&q=85' },
-  { id: 2, name: 'Conjunto Alfaiataria Areia', price: 179.90, image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=700&q=85' },
-  { id: 3, name: 'Camisa Premium Essential', price: 99.90, image: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=700&q=85' },
-  { id: 4, name: 'Jaqueta Urban Black', price: 219.90, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=700&q=85' },
-  { id: 5, name: 'Blazer Feminino Classic', price: 189.90, image: 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=700&q=85' },
-  { id: 6, name: 'Camiseta Minimal Cotton', price: 69.90, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=700&q=85' },
-  { id: 7, name: 'Vestido Longo Serena', price: 169.90, image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=700&q=85' },
-  { id: 8, name: 'Moletom Urban Essential', price: 139.90, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=700&q=85' }
+  { id: 1, name: 'Vestido Midi Elegance', category: 'feminino', price: 149.90, old: 189.90, image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&q=85', description: 'Vestido midi de caimento leve, ideal para ocasioes especiais.' },
+  { id: 2, name: 'Conjunto Alfaiataria Areia', category: 'feminino', price: 179.90, old: null, image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=700&q=85', description: 'Conjunto moderno com acabamento elegante e confortavel.' },
+  { id: 3, name: 'Camisa Premium Essential', category: 'masculino', price: 99.90, old: 129.90, image: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=700&q=85', description: 'Camisa versatil para combinar com looks casuais ou sociais.' },
+  { id: 4, name: 'Jaqueta Urban Black', category: 'masculino', price: 219.90, old: null, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=700&q=85', description: 'Jaqueta urbana com visual moderno e acabamento resistente.' },
+  { id: 5, name: 'Blazer Feminino Classic', category: 'feminino', price: 189.90, old: 229.90, image: 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=700&q=85', description: 'Blazer classico para elevar producoes profissionais e casuais.' },
+  { id: 6, name: 'Camiseta Minimal Cotton', category: 'masculino', price: 69.90, old: null, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=700&q=85', description: 'Camiseta basica em algodao, macia e facil de combinar.' },
+  { id: 7, name: 'Vestido Longo Serena', category: 'feminino', price: 169.90, old: null, image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=700&q=85', description: 'Vestido longo com modelagem fluida e visual sofisticado.' },
+  { id: 8, name: 'Moletom Urban Essential', category: 'masculino', price: 139.90, old: 159.90, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=700&q=85', description: 'Moletom confortavel para dias frios e combinacoes urbanas.' }
 ];
 
 const productMap = new Map(products.map(product => [product.id, product]));

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <div class="topbar">Ambiente de demonstracao: nao insira dados reais de cartao</div>
+  <div class="topbar">Pagamento processado com seguranca pelo Mercado Pago</div>
   <header class="header">
     <a class="logo" href="index.html">DUUM<span>CURATED WEAR</span></a>
     <a class="back-link" href="index.html">Voltar a loja</a>
@@ -25,6 +25,7 @@
         <strong>Pagamento seguro:</strong> ao continuar, voce sera redirecionado para o ambiente do Mercado Pago. A DUUM nao solicita nem armazena dados completos de cartao.
       </div>
       <p class="checkout-status" id="checkoutStatus" aria-live="polite"></p>
+      <p class="summary-note" id="orderLink"></p>
 
       <form id="checkoutForm">
         <h3>Contato e entrega</h3>
@@ -72,7 +73,7 @@
   </main>
 
   <script>
-    const products = {
+    let products = {
       1:['Vestido Midi Elegance',149.9],
       2:['Conjunto Alfaiataria Areia',179.9],
       3:['Camisa Premium Essential',99.9],
@@ -87,13 +88,30 @@
     const cart = JSON.parse(localStorage.getItem('duum_cart') || '[]');
     const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     let total = 0;
-    document.querySelector('#summary').innerHTML = cart.map(item => {
-      const product = products[item.id];
-      if (!product) return '';
-      total += product[1] * item.qty;
-      return `<div class="summary-line"><span>${product[0]} x ${item.qty}</span><span>${money(product[1] * item.qty)}</span></div>`;
-    }).join('') || '<p>Sacola vazia.</p>';
-    document.querySelector('#total').textContent = money(total);
+    function renderSummary() {
+      total = 0;
+      document.querySelector('#summary').innerHTML = cart.map(item => {
+        const product = products[item.id];
+        if (!product) return '';
+        total += product[1] * item.qty;
+        return `<div class="summary-line"><span>${product[0]} x ${item.qty}</span><span>${money(product[1] * item.qty)}</span></div>`;
+      }).join('') || '<p>Sacola vazia.</p>';
+      document.querySelector('#total').textContent = money(total);
+    }
+
+    async function loadCatalog() {
+      try {
+        const response = await fetch('/api/catalog');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (Array.isArray(data.products)) {
+          products = Object.fromEntries(data.products.map(product => [product.id, [product.name, Number(product.price)]]));
+          renderSummary();
+        }
+      } catch (error) {
+        console.warn('Resumo local carregado.', error);
+      }
+    }
     const checkoutStatus = document.querySelector('#checkoutStatus');
     const checkoutForm = document.querySelector('#checkoutForm');
     const checkoutButton = checkoutForm.querySelector('button[type="submit"]');
@@ -106,6 +124,14 @@
     if (statusMessages[params.get('status')]) {
       checkoutStatus.textContent = statusMessages[params.get('status')];
       checkoutStatus.classList.add(params.get('status'));
+      if (params.get('status') === 'success') {
+        localStorage.removeItem('duum_cart');
+      }
+    }
+    if (params.get('order')) {
+      const orderId = params.get('order');
+      localStorage.setItem('duum_last_order', orderId);
+      document.querySelector('#orderLink').innerHTML = `Pedido: <strong>${orderId}</strong>. <a href="pedido.html?id=${encodeURIComponent(orderId)}">Acompanhar status</a>`;
     }
 
     checkoutForm.addEventListener('submit', async event => {
@@ -154,6 +180,7 @@
           throw new Error('Mercado Pago nao retornou o link de pagamento.');
         }
 
+        if (data.orderId) localStorage.setItem('duum_last_order', data.orderId);
         window.location.href = paymentUrl;
       } catch (error) {
         checkoutStatus.textContent = error.message;
@@ -162,6 +189,8 @@
         checkoutButton.textContent = 'Continuar para pagamento seguro';
       }
     });
+    renderSummary();
+    loadCatalog();
   </script>
 </body>
 </html>

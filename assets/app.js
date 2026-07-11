@@ -1,6 +1,6 @@
 'use strict';
 
-const products = [
+let products = [
   {id:1,name:'Vestido Midi Elegance',category:'feminino',price:149.90,old:189.90,tag:'NOVO',image:'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&q=85',description:'Vestido midi de caimento leve, ideal para ocasioes especiais.'},
   {id:2,name:'Conjunto Alfaiataria Areia',category:'feminino',price:179.90,old:null,tag:'MAIS VENDIDO',image:'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=700&q=85',description:'Conjunto moderno com acabamento elegante e confortavel.'},
   {id:3,name:'Camisa Premium Essential',category:'masculino',price:99.90,old:129.90,tag:'OFERTA',image:'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=700&q=85',description:'Camisa versatil para combinar com looks casuais ou sociais.'},
@@ -41,6 +41,21 @@ function renderProducts(filter = 'todos') {
         </div>
       </div>
     </article>`).join('');
+}
+
+async function loadCatalog() {
+  try {
+    const response = await fetch('/api/catalog');
+    if (!response.ok) return;
+    const data = await response.json();
+    if (Array.isArray(data.products) && data.products.length) {
+      products = data.products;
+      renderProducts();
+      renderCart();
+    }
+  } catch (error) {
+    console.warn('Catalogo local carregado.', error);
+  }
 }
 
 function saveCart() {
@@ -141,3 +156,4 @@ if (!localStorage.getItem('cookie_choice')) cookieBanner.classList.add('show');
 
 renderProducts();
 renderCart();
+loadCatalog();

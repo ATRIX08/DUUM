@@ -9,14 +9,17 @@ const { readJson, sendJson } = require('./_http');
 async function seedProducts() {
   for (const product of products) {
     await query(
-      `insert into products (id, name, price, image_url, active)
-       values ($1, $2, $3, $4, true)
+      `insert into products (id, name, category, price, old_price, image_url, description, active)
+       values ($1, $2, $3, $4, $5, $6, $7, true)
        on conflict (id) do update set
          name = excluded.name,
+         category = excluded.category,
          price = excluded.price,
+         old_price = excluded.old_price,
          image_url = excluded.image_url,
+         description = excluded.description,
          updated_at = now()`,
-      [product.id, product.name, product.price, product.image]
+      [product.id, product.name, product.category, product.price, product.old || null, product.image, product.description]
     );
   }
 }

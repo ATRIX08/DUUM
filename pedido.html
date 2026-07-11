@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Acompanhar pedido | DUUM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="topbar">Acompanhe seu pedido DUUM</div>
+  <header class="header">
+    <a class="logo" href="index.html">DUUM<span>CURATED WEAR</span></a>
+    <a class="back-link" href="index.html">Voltar a loja</a>
+  </header>
+
+  <main class="checkout-page">
+    <section class="checkout-box">
+      <span class="eyebrow">STATUS</span>
+      <h1>Acompanhar pedido</h1>
+      <p class="summary-note">Digite o codigo do pedido. Se quiser mais seguranca, informe tambem o e-mail usado na compra.</p>
+      <form id="orderForm">
+        <label for="orderId">Codigo do pedido</label>
+        <input id="orderId" maxlength="80" required>
+        <label for="orderEmail">E-mail da compra</label>
+        <input id="orderEmail" type="email" maxlength="160">
+        <button class="checkout-btn" type="submit">Consultar</button>
+      </form>
+      <p class="checkout-status" id="orderStatus" aria-live="polite"></p>
+    </section>
+
+    <aside class="checkout-box checkout-summary">
+      <h2>Pedido</h2>
+      <div id="orderResult"><p class="summary-note">O status aparecera aqui.</p></div>
+    </aside>
+  </main>
+
+  <script>
+    const money = value => Number(value || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+    const params = new URLSearchParams(window.location.search);
+    const orderInput = document.querySelector('#orderId');
+    const status = document.querySelector('#orderStatus');
+    const result = document.querySelector('#orderResult');
+    orderInput.value = params.get('id') || localStorage.getItem('duum_last_order') || '';
+
+    function label(value) {
+      return {
+        pending_payment: 'Aguardando pagamento',
+        paid: 'Pagamento aprovado',
+        preparing: 'Pedido em separacao',
+        shipped: 'Pedido enviado',
+        delivered: 'Pedido entregue',
+        cancelled: 'Pedido cancelado',
+        payment_rejected: 'Pagamento recusado'
+      }[value] || value;
+    }
+
+    async function lookup(event) {
+      if (event) event.preventDefault();
+      const id = orderInput.value.trim();
+      const email = document.querySelector('#orderEmail').value.trim();
+      if (!id) return;
+      status.textContent = 'Consultando pedido...';
+      status.className = 'checkout-status';
+      try {
+        const query = new URLSearchParams({ id });
+        if (email) query.set('email', email);
+        const response = await fetch(`/api/order?${query.toString()}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Pedido nao encontrado.');
+        const order = data.order;
+        status.textContent = label(order.status);
+        status.className = 'checkout-status success';
+        result.innerHTML = `
+          <div class="summary-line"><span>Pedido</span><strong>${order.id}</strong></div>
+          <div class="summary-line"><span>Status</span><strong>${label(order.status)}</strong></div>
+          <div class="summary-line"><span>Pagamento</span><strong>${order.payment_status}</strong></div>
+          <div class="summary-line total-line"><span>Total</span><strong>${money(order.total_amount)}</strong></div>
+          ${order.items.map(item => `<div class="summary-line"><span>${item.product_name} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
+        `;
+      } catch (error) {
+        status.textContent = error.message;
+        status.className = 'checkout-status failure';
+      }
+    }
+
+    document.querySelector('#orderForm').addEventListener('submit', lookup);
+    if (orderInput.value) lookup();
+  </script>
+</body>
+</html>
