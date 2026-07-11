@@ -59,6 +59,50 @@ function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function parseGallery(value) {
+  return String(value || '').split(/\n/).map(item => item.trim()).filter(Boolean);
+}
+
+function formatGallery(value) {
+  if (Array.isArray(value)) return value.join('\n');
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.join('\n');
+    } catch {}
+  }
+  return '';
+}
+
+function formatSizeStock(value) {
+  const stock = typeof value === 'string' ? (() => {
+    try { return JSON.parse(value); } catch { return {}; }
+  })() : (value || {});
+  return Object.entries(stock).map(([size, qty]) => `${size}:${qty}`).join(',');
+}
+
+function readImage(file, maxWidth = 1200, quality = 0.78) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, maxWidth / image.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(image.width * scale);
+        canvas.height = Math.round(image.height * scale);
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/webp', quality));
+      };
+      image.onerror = reject;
+      image.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function normalize(value) {
   return String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
@@ -191,9 +235,9 @@ function renderProducts() {
       <tbody>${products.map(product => `
         <tr>
           <td>${product.id}</td>
-          <td>${escapeHtml(product.name)}<small>${escapeHtml(product.sku || product.category || '')}</small></td>
+          <td>${escapeHtml(product.name)}<small>${escapeHtml(product.sku || product.category || '')}</small><small>Tam. ${escapeHtml(product.sizes || 'P,M,G,GG')}</small></td>
           <td>${money(product.price)}${product.old_price ? `<small>De ${money(product.old_price)}</small>` : ''}</td>
-          <td><span class="${Number(product.stock_quantity || 0) <= 5 ? 'stock-danger' : ''}">${product.stock_quantity ?? 0}</span></td>
+          <td><span class="${Number(product.stock_quantity || 0) <= 5 ? 'stock-danger' : ''}">${product.stock_quantity ?? 0}</span><small>${escapeHtml(formatSizeStock(product.size_stock))}</small></td>
           <td>${escapeHtml(product.supplier_name || '-')}</td>
           <td><span class="pill ${product.active ? 'pill-success' : 'pill-muted'}">${product.active ? 'Sim' : 'Nao'}</span></td>
           <td class="action-row">
@@ -209,9 +253,11 @@ function fillProduct(id) {
   const product = state.products.find(item => Number(item.id) === Number(id));
   if (!product) return;
   const form = qs('#productForm');
-  ['id','sku','name','category','price','old_price','image_url','supplier_id','supplier_sku','supplier_cost','stock_quantity','description'].forEach(name => {
+  ['id','sku','name','category','price','old_price','image_url','supplier_id','supplier_sku','supplier_cost','stock_quantity','sizes','description'].forEach(name => {
     form.elements[name].value = product[name] ?? '';
   });
+  form.elements.size_stock.value = formatSizeStock(product.size_stock);
+  form.elements.gallery_urls.value = formatGallery(product.gallery_urls);
   form.elements.active.checked = product.active !== false;
   form.elements.featured.checked = product.featured === true;
 }
@@ -222,6 +268,7 @@ async function saveProduct(event) {
   const data = formData(form);
   data.active = form.elements.active.checked;
   data.featured = form.elements.featured.checked;
+  data.gallery_urls = parseGallery(data.gallery_urls);
   await api('/api/admin-products', { method: 'POST', body: JSON.stringify(data) });
   setStatus('Produto salvo.', 'success');
   form.reset();
@@ -259,6 +306,26 @@ async function toggleProduct(id) {
     featured: product.featured === true
   });
   setStatus(product.active === false ? 'Produto ativado.' : 'Produto desativado.', 'success');
+}
+
+async function uploadMainImage(event) {
+  const [file] = event.target.files || [];
+  if (!file) return;
+  setStatus('Preparando foto principal...');
+  const dataUrl = await readImage(file);
+  qs('#productForm').elements.image_url.value = dataUrl;
+  setStatus('Foto principal pronta para salvar.', 'success');
+}
+
+async function uploadGalleryImages(event) {
+  const files = Array.from(event.target.files || []).slice(0, 6);
+  if (!files.length) return;
+  setStatus('Preparando galeria...');
+  const current = parseGallery(qs('#productForm').elements.gallery_urls.value);
+  const uploaded = [];
+  for (const file of files) uploaded.push(await readImage(file, 1000, 0.72));
+  qs('#productForm').elements.gallery_urls.value = [...current, ...uploaded].slice(0, 6).join('\n');
+  setStatus('Galeria pronta para salvar.', 'success');
 }
 
 async function loadSuppliers() {
@@ -465,6 +532,8 @@ qs('#refreshLeads').addEventListener('click', () => loadLeads().catch(error => s
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));
 qs('#supplierForm').addEventListener('submit', event => saveSupplier(event).catch(error => setStatus(error.message, 'failure')));
 qs('#couponForm').addEventListener('submit', event => saveCoupon(event).catch(error => setStatus(error.message, 'failure')));
+qs('#productImageUpload').addEventListener('change', event => uploadMainImage(event).catch(error => setStatus(error.message, 'failure')));
+qs('#productGalleryUpload').addEventListener('change', event => uploadGalleryImages(event).catch(error => setStatus(error.message, 'failure')));
 
 qs('#orderSearch').addEventListener('input', event => {
   state.filters.orders = event.target.value;

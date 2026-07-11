@@ -114,6 +114,9 @@ create index if not exists idx_payment_events_provider_payment_id on payment_eve
 alter table products add column if not exists sku text;
 alter table products add column if not exists stock_quantity integer not null default 0;
 alter table products add column if not exists featured boolean not null default false;
+alter table products add column if not exists sizes text not null default 'P,M,G,GG';
+alter table products add column if not exists size_stock jsonb not null default '{}'::jsonb;
+alter table products add column if not exists gallery_urls jsonb not null default '[]'::jsonb;
 
 alter table orders add column if not exists shipping_method text;
 alter table orders add column if not exists carrier text;

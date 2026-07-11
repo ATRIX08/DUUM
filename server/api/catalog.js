@@ -12,7 +12,7 @@ async function catalog(req, res) {
   }
 
   const result = await query(
-    `select id, sku, name, category, price, old_price, image_url, description, active, stock_quantity, featured
+    `select id, sku, name, category, price, old_price, image_url, gallery_urls, description, active, sizes, size_stock, stock_quantity, featured
      from products
      where active = true
      order by featured desc, id asc`
@@ -26,7 +26,10 @@ async function catalog(req, res) {
     old: product.old_price === null ? null : Number(product.old_price),
     tag: product.old_price ? 'OFERTA' : 'NOVO',
     image: product.image_url,
+    gallery: Array.isArray(product.gallery_urls) ? product.gallery_urls : [],
     description: product.description || '',
+    sizes: String(product.sizes || 'P,M,G,GG').split(',').map(size => size.trim()).filter(Boolean),
+    sizeStock: product.size_stock || {},
     stock: Number(product.stock_quantity || 0),
     featured: product.featured === true
   }));

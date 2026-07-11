@@ -1,5 +1,7 @@
 'use strict';
 
+const { hasDatabase, query } = require('./_db');
+
 const products = [
   { id: 1, sku: 'DUUM-VES-001', name: 'Vestido Midi Elegance', category: 'feminino', price: 149.90, old: 189.90, stock: 12, featured: true, image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&q=85', description: 'Vestido midi de caimento leve, ideal para ocasioes especiais.' },
   { id: 2, sku: 'DUUM-CON-002', name: 'Conjunto Alfaiataria Areia', category: 'feminino', price: 179.90, old: null, stock: 8, featured: true, image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=700&q=85', description: 'Conjunto moderno com acabamento elegante e confortavel.' },
@@ -13,20 +15,55 @@ const products = [
 
 const productMap = new Map(products.map(product => [product.id, product]));
 
-function normalizeCart(rawCart) {
+function fallbackSizeStock(product) {
+  return { P: product.stock || 0, M: product.stock || 0, G: product.stock || 0, GG: product.stock || 0 };
+}
+
+function normalizeProductForCart(product) {
+  const sizes = Array.isArray(product.sizes)
+    ? product.sizes
+    : String(product.sizes || 'P,M,G,GG').split(',').map(size => size.trim()).filter(Boolean);
+  const sizeStock = product.size_stock || product.sizeStock || fallbackSizeStock(product);
+  return {
+    id: Number(product.id),
+    name: product.name,
+    price: Number(product.price),
+    image: product.image || product.image_url,
+    sizes,
+    sizeStock
+  };
+}
+
+async function getCartProductMap(ids) {
+  if (!hasDatabase()) return productMap;
+  const result = await query(
+    `select id, name, price, image_url, sizes, size_stock, stock_quantity
+     from products
+     where active = true and id = any($1::int[])`,
+    [ids]
+  );
+  return new Map(result.rows.map(row => [Number(row.id), normalizeProductForCart(row)]));
+}
+
+async function normalizeCart(rawCart) {
   if (!Array.isArray(rawCart)) {
     throw new Error('Sacola invalida.');
   }
+
+  const ids = rawCart.map(item => Number(item.id)).filter(Number.isInteger);
+  const sourceMap = await getCartProductMap(ids);
 
   const normalized = rawCart.map(item => {
     const id = Number(item.id);
     const qty = Number(item.qty);
     const size = String(item.size || 'M').trim().slice(0, 8).toUpperCase();
-    const product = productMap.get(id);
+    const product = normalizeProductForCart(sourceMap.get(id) || {});
 
-    if (!product || !Number.isInteger(qty) || qty < 1 || qty > 20) {
+    if (!product.id || !Number.isInteger(qty) || qty < 1 || qty > 20) {
       throw new Error('Produto ou quantidade invalida.');
     }
+    if (!product.sizes.includes(size)) throw new Error(`Tamanho ${size} indisponivel para ${product.name}.`);
+    if (Number(product.sizeStock[size] || 0) < qty) throw new Error(`Estoque insuficiente no tamanho ${size} para ${product.name}.`);
 
     return {
       id: product.id,

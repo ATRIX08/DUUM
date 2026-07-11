@@ -128,10 +128,21 @@
             <input name="price" type="number" step="0.01" min="0" placeholder="Preco" required>
             <input name="old_price" type="number" step="0.01" min="0" placeholder="Preco antigo">
             <input name="image_url" placeholder="URL da imagem">
+            <label class="upload-field">
+              <span>Enviar foto principal</span>
+              <input id="productImageUpload" type="file" accept="image/*">
+            </label>
             <input name="supplier_id" type="number" min="1" placeholder="ID fornecedor">
             <input name="supplier_sku" placeholder="SKU fornecedor">
             <input name="supplier_cost" type="number" step="0.01" min="0" placeholder="Custo fornecedor">
             <input name="stock_quantity" type="number" min="0" step="1" placeholder="Estoque">
+            <input name="sizes" placeholder="Tamanhos: P,M,G,GG">
+            <input name="size_stock" placeholder="Estoque por tamanho: P:2,M:5,G:1">
+            <textarea name="gallery_urls" placeholder="Galeria: uma URL por linha ou envie fotos abaixo"></textarea>
+            <label class="upload-field wide">
+              <span>Enviar fotos da galeria</span>
+              <input id="productGalleryUpload" type="file" accept="image/*" multiple>
+            </label>
             <textarea name="description" placeholder="Descricao"></textarea>
             <label class="checkline"><input name="active" type="checkbox" checked> Produto ativo</label>
             <label class="checkline"><input name="featured" type="checkbox"> Destaque</label>

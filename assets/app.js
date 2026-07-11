@@ -37,6 +37,17 @@ function productSizes(product) {
   return Array.isArray(product.sizes) && product.sizes.length ? product.sizes : defaultSizes;
 }
 
+function productSizeStock(product, size) {
+  const stock = product.sizeStock || product.size_stock || {};
+  if (size && stock[size] !== undefined) return Number(stock[size] || 0);
+  return Number(product.stock || 0);
+}
+
+function selectedProductStock(product) {
+  if (currentSize === 'todos') return Number(product.stock || 0);
+  return productSizeStock(product, currentSize);
+}
+
 function renderProducts() {
   const list = products.filter(product => {
     const categoryMatch = currentCategory === 'todos' || product.category === currentCategory;
@@ -50,10 +61,10 @@ function renderProducts() {
         <h3>${safeText(product.name)}</h3>
         <div class="price">${product.old ? `<span class="old">${money(product.old)}</span>` : ''}<strong>${money(product.price)}</strong></div>
         <div class="product-sizes">${productSizes(product).map(size => `<span>${safeText(size)}</span>`).join('')}</div>
-        <small class="stock-note">${Number(product.stock || 0) > 0 ? `${product.stock} disponiveis` : 'Indisponivel'}</small>
+        <small class="stock-note">${selectedProductStock(product) > 0 ? `${selectedProductStock(product)} disponiveis${currentSize === 'todos' ? '' : ` no ${currentSize}`}` : 'Indisponivel nesse tamanho'}</small>
         <div class="product-actions">
           <button data-view="${product.id}">Detalhes</button>
-          <button class="add" data-add="${product.id}" data-size="${currentSize === 'todos' ? 'M' : safeText(currentSize)}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>Adicionar</button>
+          <button class="add" data-add="${product.id}" data-size="${currentSize === 'todos' ? 'M' : safeText(currentSize)}" ${selectedProductStock(product) <= 0 ? 'disabled' : ''}>Adicionar</button>
         </div>
       </div>
     </article>`).join('') || '<div class="empty catalog-empty">Nenhuma roupa encontrada nesse tamanho.</div>';
@@ -81,8 +92,8 @@ function saveCart() {
 
 function addToCart(id, size = 'M') {
   const product = products.find(entry => entry.id === id);
-  if (product && Number(product.stock || 0) <= 0) {
-    alert('Produto indisponivel no momento.');
+  if (product && productSizeStock(product, size) <= 0) {
+    alert(`Tamanho ${size} indisponivel no momento.`);
     return;
   }
   const item = cart.find(product => product.id === id && product.size === size);
@@ -197,7 +208,8 @@ function openProduct(id) {
   const product = products.find(entry => entry.id === id);
   const sizes = productSizes(product);
   const selectedSize = currentSize === 'todos' || !sizes.includes(currentSize) ? sizes[0] : currentSize;
-  document.querySelector('#dialogContent').innerHTML = `<div class="dialog-product"><img src="${product.image}" alt="${safeText(product.name)}"><div class="dialog-details"><span class="eyebrow">${safeText(product.tag)}</span><h2>${safeText(product.name)}</h2><h3>${money(product.price)}</h3><p>${safeText(product.description)}</p><p><strong>Escolha o tamanho</strong></p><div class="size-list">${sizes.map(size => `<button class="${size === selectedSize ? 'active' : ''}" data-size-select="${safeText(size)}">${safeText(size)}</button>`).join('')}</div><button class="checkout-btn" data-add="${product.id}" data-size="${safeText(selectedSize)}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>${Number(product.stock || 0) > 0 ? 'Adicionar a sacola' : 'Indisponivel'}</button><small>Prazo e disponibilidade confirmados no checkout.</small></div></div>`;
+  const gallery = Array.isArray(product.gallery) && product.gallery.length ? product.gallery : [product.image];
+  document.querySelector('#dialogContent').innerHTML = `<div class="dialog-product"><div><img id="dialogMainImage" src="${gallery[0]}" alt="${safeText(product.name)}"><div class="gallery-thumbs">${gallery.slice(0, 6).map((image, index) => `<button class="${index === 0 ? 'active' : ''}" data-gallery-image="${safeText(image)}"><img src="${safeText(image)}" alt=""></button>`).join('')}</div></div><div class="dialog-details"><span class="eyebrow">${safeText(product.tag)}</span><h2>${safeText(product.name)}</h2><h3>${money(product.price)}</h3><p>${safeText(product.description)}</p><p><strong>Escolha o tamanho</strong></p><div class="size-list">${sizes.map(size => `<button class="${size === selectedSize ? 'active' : ''}" data-size-select="${safeText(size)}">${safeText(size)}<small>${productSizeStock(product, size)}</small></button>`).join('')}</div><button class="checkout-btn" data-add="${product.id}" data-size="${safeText(selectedSize)}" ${productSizeStock(product, selectedSize) <= 0 ? 'disabled' : ''}>${productSizeStock(product, selectedSize) > 0 ? 'Adicionar a sacola' : 'Indisponivel'}</button><small>Prazo e disponibilidade confirmados no checkout.</small></div></div>`;
   document.querySelector('#productDialog').showModal();
 }
 
@@ -217,6 +229,20 @@ document.addEventListener('click', event => {
     sizeSelect.classList.add('active');
     const addButton = document.querySelector('#productDialog [data-add]');
     if (addButton) addButton.dataset.size = sizeSelect.dataset.sizeSelect;
+    const product = products.find(entry => Number(entry.id) === Number(addButton?.dataset.add));
+    const available = product ? productSizeStock(product, sizeSelect.dataset.sizeSelect) : 0;
+    if (addButton) {
+      addButton.disabled = available <= 0;
+      addButton.textContent = available > 0 ? 'Adicionar a sacola' : 'Indisponivel';
+    }
+  }
+
+  const galleryButton = event.target.closest('[data-gallery-image]');
+  if (galleryButton) {
+    document.querySelectorAll('[data-gallery-image]').forEach(button => button.classList.remove('active'));
+    galleryButton.classList.add('active');
+    const image = document.querySelector('#dialogMainImage');
+    if (image) image.src = galleryButton.dataset.galleryImage;
   }
 
   if (!event.target.closest('.header-actions')) closeAccountMenu();

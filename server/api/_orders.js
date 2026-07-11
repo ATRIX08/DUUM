@@ -67,7 +67,7 @@ async function applyCoupon(items, coupon) {
 }
 
 async function createPendingOrder({ orderId, cart, customer, coupon }) {
-  const couponResult = await applyCoupon(normalizeCart(cart), coupon);
+  const couponResult = await applyCoupon(await normalizeCart(cart), coupon);
   const items = couponResult.items;
   const normalizedCustomer = normalizeCustomer(customer);
   const total = calculateTotal(items);

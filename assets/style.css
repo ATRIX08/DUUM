@@ -140,12 +140,18 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .dialog-close{position:absolute;right:12px;top:12px;z-index:3}
 .dialog-product{display:grid;grid-template-columns:1fr 1fr;background:#fff}
 .dialog-product img{width:100%;height:540px;object-fit:cover}
+.gallery-thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px;background:#fff}
+.gallery-thumbs button{border:2px solid transparent;background:#fff;padding:0;height:70px;cursor:pointer;border-radius:6px;overflow:hidden}
+.gallery-thumbs button.active{border-color:var(--cta)}
+.gallery-thumbs img{width:100%;height:100%;object-fit:cover}
 .dialog-details{padding:58px 38px}
 .dialog-details h2{font-size:32px;margin:12px 0}
 .dialog-details p{line-height:1.7;color:var(--muted)}
 .size-list{display:flex;gap:8px;margin:20px 0}
-.size-list button{width:44px;height:44px;background:#fff;border:1px solid #b8bec8;border-radius:4px;font-weight:800}
+.size-list button{width:54px;height:50px;background:#fff;border:1px solid #b8bec8;border-radius:4px;font-weight:800}
+.size-list button small{display:block;color:var(--muted);font-size:10px;margin-top:2px}
 .size-list button.active{background:var(--deep);border-color:var(--deep);color:#fff;box-shadow:0 10px 20px rgba(24,34,47,.16)}
+.size-list button.active small{color:#d9e1ec}
 .account-dialog{width:min(520px,92vw);background:#fff;padding:38px}
 .account-dialog h2{font-size:34px;margin:10px 0}
 .account-dialog p{line-height:1.6;color:var(--muted)}
@@ -227,6 +233,9 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .admin-form.compact{grid-template-columns:repeat(3,1fr)}
 .admin-form input,.admin-form textarea,.admin-form select,.admin-detail select,.admin-toolbar input,.admin-toolbar select{width:100%;padding:12px;border:1px solid #cfd4dc;border-radius:4px;background:#fff}
 .admin-form textarea{grid-column:span 2;min-height:46px;resize:vertical}
+.upload-field{display:flex;flex-direction:column;justify-content:center;gap:7px;padding:10px 12px;border:1px dashed #b8c5d6;background:#fff;border-radius:4px;font-size:12px;font-weight:900;color:#344054}
+.upload-field input{padding:0;border:0;font-size:12px}
+.upload-field.wide{grid-column:span 2}
 .admin-form .checkline{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#303642}
 .admin-form .checkline input{width:auto}
 .admin-form .checkout-btn{margin:0}
@@ -307,6 +316,7 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .checkout-page{margin:34px auto}
   .checkout-summary{position:static}
   .dialog-product img{height:360px}
+  .gallery-thumbs img{height:100%}
   .admin-live{display:none}
   .admin-hero{grid-template-columns:1fr}
   .admin-hero-actions{justify-content:flex-start}
@@ -381,7 +391,7 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .admin-hero{display:block}
   .admin-tabs{grid-template-columns:1fr}
   .admin-form,.admin-form.compact{grid-template-columns:1fr}
-  .admin-form textarea{grid-column:auto}
+  .admin-form textarea,.upload-field.wide{grid-column:auto}
   .admin-grid{grid-template-columns:1fr}
   .admin-dashboard,.admin-two-col,.admin-order-form{grid-template-columns:1fr}
   .admin-order-form textarea{grid-column:auto}
@@ -410,6 +420,8 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .cart-item img{width:68px;height:86px}
   .cart-item .remove{grid-column:2;justify-self:start}
   .dialog-product img{height:300px}
+  .gallery-thumbs{grid-template-columns:repeat(3,1fr)}
+  .gallery-thumbs button{height:62px}
   .dialog-details{padding:34px 22px}
   .dialog-details h2,.account-dialog h2{font-size:28px}
   .legal{margin:38px auto;padding:0 14px 48px}
