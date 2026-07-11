@@ -2,6 +2,7 @@
 
 const { cleanText, requireAdmin } = require('./_admin');
 const { hasDatabase, query } = require('./_db');
+const { sendTransactionalEmail, shippedTemplate } = require('./_email');
 const { methodNotAllowed, readJson, sendJson } = require('./_http');
 
 const allowedStatuses = new Set(['pending_payment', 'paid', 'preparing', 'shipped', 'delivered', 'cancelled', 'payment_rejected']);
@@ -91,6 +92,20 @@ async function adminOrders(req, res) {
     );
 
     if (!result.rows.length) return sendJson(res, 404, { error: 'Pedido nao encontrado.' });
+    if (status === 'shipped') {
+      const emailResult = await query(
+        `select c.email
+         from orders o
+         join customers c on c.id = o.customer_id
+         where o.id = $1`,
+        [targetId]
+      );
+      await sendTransactionalEmail({
+        to: emailResult.rows[0]?.email,
+        subject: `Pedido DUUM enviado - ${targetId}`,
+        html: shippedTemplate(targetId, carrier, trackingCode)
+      }).catch(() => null);
+    }
     return sendJson(res, 200, { saved: true, order: result.rows[0] });
   } catch (error) {
     return sendJson(res, 400, { error: error.message });

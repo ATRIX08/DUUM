@@ -11,9 +11,11 @@ const adminSuppliers = require('./admin-suppliers');
 const auth = require('./auth');
 const catalog = require('./catalog');
 const createPreference = require('./create-preference');
+const customerOrders = require('./customer-orders');
 const mercadopagoWebhook = require('./mercadopago-webhook');
 const newsletter = require('./newsletter');
 const orderLookup = require('./order');
+const shipping = require('./shipping');
 const { sendJson } = require('./_http');
 
 function routeApi(req, res) {
@@ -22,6 +24,8 @@ function routeApi(req, res) {
   if (pathname === '/api/create-preference') return createPreference(req, res);
   if (pathname === '/api/catalog') return catalog(req, res);
   if (pathname === '/api/order') return orderLookup(req, res);
+  if (pathname === '/api/shipping') return shipping(req, res);
+  if (pathname === '/api/customer-orders') return customerOrders(req, res);
   if (pathname === '/api/newsletter') return newsletter(req, res);
   if (pathname === '/api/auth') return auth(req, res);
   if (pathname === '/api/admin-dashboard') return adminDashboard(req, res);

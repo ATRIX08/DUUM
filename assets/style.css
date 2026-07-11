@@ -97,6 +97,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .product-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
 .product-actions button{min-height:44px;border:1px solid var(--ink);cursor:pointer;background:#fff;font-weight:800;border-radius:4px}
 .product-actions button:hover{border-color:var(--cta);color:var(--cta);transform:translateY(-1px)}
+.details-link{min-height:44px;border:1px solid var(--ink);cursor:pointer;background:#fff;font-weight:800;border-radius:4px;color:var(--ink);text-decoration:none;display:flex;align-items:center;justify-content:center}
+.details-link:hover{border-color:var(--cta);color:var(--cta);transform:translateY(-1px)}
 .product-actions .add{background:linear-gradient(135deg,var(--cta),var(--cta-strong));border-color:var(--cta-strong);color:#fff;box-shadow:0 10px 22px rgba(31,122,140,.2)}
 .product-actions .add:hover{color:#fff;box-shadow:0 14px 28px rgba(31,122,140,.3)}
 .product-actions button:disabled,.checkout-btn:disabled{opacity:.45;cursor:not-allowed}
@@ -192,6 +194,14 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .legal section{background:#fff;padding:30px;margin:18px 0;border:1px solid var(--line)}
 .legal p,.legal li{line-height:1.75;color:#565f6d}
 .placeholder{background:#fff7e8;border:1px solid #f1d7ae;padding:12px 14px;color:#4e3620}
+.product-page{max-width:1180px;margin:54px auto 80px;padding:0 22px;display:grid;grid-template-columns:1fr .8fr;gap:34px;align-items:start}
+.product-page-media,.product-page-info{background:#fff;border:1px solid var(--line);box-shadow:0 12px 35px rgba(17,19,24,.05)}
+.product-page-media>img{width:100%;height:680px;object-fit:cover;display:block}
+.product-page-info{padding:38px}
+.product-page-info h1{font-size:44px;line-height:1.02;margin:10px 0 18px}
+.product-page-info p{color:var(--muted);line-height:1.75}
+.order-card{display:block;text-decoration:none;color:var(--ink);border:1px solid var(--line);padding:13px;margin:10px 0;background:#fff}
+.order-card span,.order-card small{display:block;color:var(--muted);margin-top:5px}
 .admin-body{background:#eef2f6;color:#101828}
 .admin-body:before{content:"";position:fixed;inset:0 0 auto;height:360px;background:linear-gradient(135deg,#111827,#214650 58%,#e7f3f4);z-index:-1}
 .admin-top{height:76px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(231,233,238,.82);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10}
@@ -277,6 +287,8 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .admin-order-form label{font-size:12px;font-weight:800;color:#303642}
 .admin-order-form input,.admin-order-form textarea,.admin-order-form select{width:100%;padding:12px;border:1px solid #cfd4dc;border-radius:4px;background:#fff}
 .admin-order-form textarea{grid-column:span 2;min-height:84px}
+.admin-shipping-actions{margin:10px 0 18px}
+.admin-action-link{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--cta-strong);background:#fff;color:var(--cta-strong);border-radius:4px;padding:9px 12px;font-size:12px;font-weight:900;text-decoration:none}
 @media(max-width:1180px){
   .header{padding:0 32px}
   .header nav{gap:18px}
@@ -313,6 +325,8 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .editorial-image{height:360px}
   footer{grid-template-columns:1fr 1fr}
   .dialog-product,.checkout-page{grid-template-columns:1fr}
+  .product-page{grid-template-columns:1fr;margin:34px auto}
+  .product-page-media>img{height:520px}
   .checkout-page{margin:34px auto}
   .checkout-summary{position:static}
   .dialog-product img{height:360px}
@@ -383,6 +397,10 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .cookie-banner div{display:grid;gap:8px}
   .row{grid-template-columns:1fr}
   .checkout-page{padding:0 14px;margin:24px auto}
+  .product-page{padding:0 14px;margin:24px auto 54px}
+  .product-page-media>img{height:420px}
+  .product-page-info{padding:24px 18px}
+  .product-page-info h1{font-size:34px}
   .checkout-box{padding:24px 18px}
   .summary-line{display:grid;grid-template-columns:1fr auto;align-items:start}
   .admin-top{height:auto;gap:14px;align-items:flex-start;flex-direction:column;padding:18px}

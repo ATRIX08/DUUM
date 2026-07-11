@@ -63,7 +63,7 @@ function renderProducts() {
         <div class="product-sizes">${productSizes(product).map(size => `<span>${safeText(size)}</span>`).join('')}</div>
         <small class="stock-note">${selectedProductStock(product) > 0 ? `${selectedProductStock(product)} disponiveis${currentSize === 'todos' ? '' : ` no ${currentSize}`}` : 'Indisponivel nesse tamanho'}</small>
         <div class="product-actions">
-          <button data-view="${product.id}">Detalhes</button>
+          <a class="details-link" href="produto.html?id=${product.id}">Ver produto</a>
           <button class="add" data-add="${product.id}" data-size="${currentSize === 'todos' ? 'M' : safeText(currentSize)}" ${selectedProductStock(product) <= 0 ? 'disabled' : ''}>Adicionar</button>
         </div>
       </div>
@@ -275,7 +275,7 @@ accountMenu.addEventListener('click', event => {
     return;
   }
   if (action === 'track' || action === 'orders') {
-    window.location.href = 'pedido.html';
+    window.location.href = account?.email ? `pedido.html?email=${encodeURIComponent(account.email)}` : 'pedido.html';
     return;
   }
   if (action === 'profile') {

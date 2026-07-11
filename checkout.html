@@ -70,7 +70,7 @@
       <h2>Resumo</h2>
       <div id="summary"></div>
       <div class="summary-line" id="discountLine" hidden><span>Desconto</span><span id="discount"></span></div>
-      <div class="summary-line"><span>Frete</span><span>A calcular</span></div>
+      <div class="summary-line"><span>Frete</span><span id="shippingFee">A calcular</span></div>
       <div class="summary-line total-line"><strong>Total</strong><strong id="total"></strong></div>
       <p class="summary-note">Os precos sao conferidos novamente no servidor antes de abrir o pagamento.</p>
     </aside>
@@ -93,6 +93,7 @@
     const account = JSON.parse(localStorage.getItem('duum_account') || 'null');
     const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     let total = 0;
+    let shipping = { valid: false, fee: 0, label: 'A calcular', method: 'standard' };
     function renderSummary() {
       total = 0;
       document.querySelector('#summary').innerHTML = cart.map(item => {
@@ -105,7 +106,21 @@
       const discount = coupon === 'DUUM10' ? Number((total * 0.1).toFixed(2)) : 0;
       document.querySelector('#discountLine').hidden = discount <= 0;
       document.querySelector('#discount').textContent = discount > 0 ? `- ${money(discount)}` : '';
-      document.querySelector('#total').textContent = money(total - discount);
+      document.querySelector('#shippingFee').textContent = shipping.valid ? (shipping.fee > 0 ? `${shipping.label}: ${money(shipping.fee)}` : shipping.label) : 'A calcular';
+      document.querySelector('#total').textContent = money(total - discount + Number(shipping.fee || 0));
+    }
+
+    async function quoteShipping() {
+      const cep = document.querySelector('#cep').value.replace(/\D/g, '');
+      if (cep.length !== 8) {
+        shipping = { valid: false, fee: 0, label: 'A calcular', method: 'standard' };
+        renderSummary();
+        return;
+      }
+      const response = await fetch(`/api/shipping?cep=${encodeURIComponent(cep)}&subtotal=${encodeURIComponent(total)}`);
+      const data = await response.json().catch(() => ({}));
+      shipping = response.ok ? data : { valid: false, fee: 0, label: data.error || 'A calcular', method: 'standard' };
+      renderSummary();
     }
 
     async function loadCatalog() {
@@ -180,7 +195,7 @@
         const response = await fetch('/api/create-preference', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ cart, customer, coupon })
+          body: JSON.stringify({ cart, customer, coupon, shipping })
         });
         const responseText = await response.text();
         let data = {};
@@ -221,6 +236,7 @@
         document.querySelector('#address').value = [data.logradouro, data.bairro].filter(Boolean).join(' - ');
         document.querySelector('#city').value = data.localidade || '';
         hint.textContent = 'Endereco preenchido.';
+        quoteShipping().catch(() => null);
       } catch (error) {
         hint.textContent = error.message || 'Nao foi possivel buscar o CEP.';
       }

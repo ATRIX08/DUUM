@@ -119,6 +119,7 @@ alter table products add column if not exists size_stock jsonb not null default 
 alter table products add column if not exists gallery_urls jsonb not null default '[]'::jsonb;
 
 alter table orders add column if not exists shipping_method text;
+alter table orders add column if not exists shipping_fee numeric(10,2) not null default 0;
 alter table orders add column if not exists carrier text;
 alter table orders add column if not exists tracking_code text;
 alter table orders add column if not exists admin_notes text;

@@ -171,11 +171,18 @@ async function openOrder(id) {
     <div class="admin-grid">
       <div><strong>Cliente</strong><span>${escapeHtml(order.customer_name || '-')}</span></div>
       <div><strong>E-mail</strong><span>${escapeHtml(order.customer_email || '-')}</span></div>
+      <div><strong>Telefone</strong><span>${escapeHtml(order.customer_phone || '-')}</span></div>
       <div><strong>Total</strong><span>${money(order.total_amount)}</span></div>
+      <div><strong>Frete</strong><span>${money(order.shipping_fee)}</span></div>
       <div><strong>Desconto</strong><span>${order.discount_code ? `${escapeHtml(order.discount_code)} - ${money(order.discount_amount)}` : '-'}</span></div>
       <div><strong>Pagamento</strong><span>${escapeHtml(order.payment_status)}</span></div>
       <div><strong>Transportadora</strong><span>${escapeHtml(order.carrier || '-')}</span></div>
       <div><strong>Rastreio</strong><span>${escapeHtml(order.tracking_code || '-')}</span></div>
+      <div><strong>Endereco</strong><span>${escapeHtml([order.address, order.number, order.city, order.cep].filter(Boolean).join(', ') || '-')}</span></div>
+    </div>
+    <div class="action-row admin-shipping-actions">
+      <button data-copy-address="${escapeHtml([order.customer_name, order.address, order.number, order.city, order.cep].filter(Boolean).join(' | '))}">Copiar endereco</button>
+      ${order.customer_phone ? `<a class="admin-action-link" href="https://wa.me/${escapeHtml(String(order.customer_phone).replace(/\\D/g, ''))}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
     </div>
     <div class="admin-order-form">
       <label>Status operacional</label>
@@ -515,6 +522,12 @@ document.addEventListener('click', async event => {
 
   const fillCouponButton = event.target.closest('[data-fill-coupon]');
   if (fillCouponButton) fillCoupon(fillCouponButton.dataset.fillCoupon);
+
+  const copyAddress = event.target.closest('[data-copy-address]');
+  if (copyAddress) {
+    navigator.clipboard?.writeText(copyAddress.dataset.copyAddress);
+    setStatus('Endereco copiado.', 'success');
+  }
 });
 
 qs('#saveSecret').addEventListener('click', () => {

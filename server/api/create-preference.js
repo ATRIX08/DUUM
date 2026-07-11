@@ -108,6 +108,7 @@ async function createPreference(req, res) {
       orderId,
       discount_code: order.discountCode,
       discount_amount: order.discountAmount,
+      shipping_fee: order.shippingFee,
       payment_url: paymentUrl,
       init_point: mpPayload.init_point,
       sandbox_init_point: mpPayload.sandbox_init_point

@@ -2,6 +2,8 @@
 
 const { normalizeCart } = require('./_catalog');
 const { hasDatabase, query, withTransaction } = require('./_db');
+const { orderCreatedTemplate, sendTransactionalEmail } = require('./_email');
+const { calculateShipping } = require('./_shipping');
 
 function cleanText(value, maxLength) {
   return String(value || '').trim().slice(0, maxLength);
@@ -70,10 +72,16 @@ async function createPendingOrder({ orderId, cart, customer, coupon }) {
   const couponResult = await applyCoupon(await normalizeCart(cart), coupon);
   const items = couponResult.items;
   const normalizedCustomer = normalizeCustomer(customer);
-  const total = calculateTotal(items);
+  const subtotal = calculateTotal(items);
+  const shippingQuote = calculateShipping(normalizedCustomer.cep, subtotal);
+  const shippingFee = Number(shippingQuote.fee || 0);
+  const total = Number((subtotal + shippingFee).toFixed(2));
+  const mercadoPagoItems = shippingFee > 0
+    ? [...items, { id: 'shipping', title: shippingQuote.label || 'Frete', quantity: 1, unit_price: shippingFee, currency_id: 'BRL' }]
+    : items;
 
   if (!hasDatabase()) {
-    return { orderId, items, total, saved: false };
+    return { orderId, items: mercadoPagoItems, subtotal, shippingFee, shippingMethod: shippingQuote.method, total, saved: false };
   }
 
   await withTransaction(async client => {
@@ -95,8 +103,8 @@ async function createPendingOrder({ orderId, cart, customer, coupon }) {
     const customerId = customerResult.rows[0].id;
 
     await client.query(
-      `insert into orders (id, customer_id, status, payment_status, total_amount, currency, discount_code, discount_amount)
-       values ($1, $2, 'pending_payment', 'pending', $3, 'BRL', $4, $5)
+      `insert into orders (id, customer_id, status, payment_status, total_amount, currency, discount_code, discount_amount, shipping_method, shipping_fee)
+       values ($1, $2, 'pending_payment', 'pending', $3, 'BRL', $4, $5, $6, $7)
        on conflict (id) do update set
          customer_id = excluded.customer_id,
          status = excluded.status,
@@ -104,8 +112,10 @@ async function createPendingOrder({ orderId, cart, customer, coupon }) {
          total_amount = excluded.total_amount,
          discount_code = excluded.discount_code,
          discount_amount = excluded.discount_amount,
+         shipping_method = excluded.shipping_method,
+         shipping_fee = excluded.shipping_fee,
          updated_at = now()`,
-      [orderId, customerId, total, couponResult.code, couponResult.discountAmount]
+      [orderId, customerId, total, couponResult.code, couponResult.discountAmount, shippingQuote.method || 'standard', shippingFee]
     );
 
     if (couponResult.code) {
@@ -136,7 +146,13 @@ async function createPendingOrder({ orderId, cart, customer, coupon }) {
     }
   });
 
-  return { orderId, items, total, discountCode: couponResult.code, discountAmount: couponResult.discountAmount, saved: true };
+  await sendTransactionalEmail({
+    to: normalizedCustomer.email,
+    subject: `Pedido DUUM recebido - ${orderId}`,
+    html: orderCreatedTemplate(orderId, total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
+  }).catch(() => null);
+
+  return { orderId, items: mercadoPagoItems, subtotal, shippingFee, shippingMethod: shippingQuote.method, total, discountCode: couponResult.code, discountAmount: couponResult.discountAmount, saved: true };
 }
 
 async function attachPreference(orderId, preferenceId, paymentUrl) {

@@ -35,6 +35,7 @@
     <aside class="checkout-box checkout-summary">
       <h2>Pedido</h2>
       <div id="orderResult"><p class="summary-note">O status aparecera aqui.</p></div>
+      <div id="customerOrders"></div>
     </aside>
   </main>
 
@@ -45,6 +46,7 @@
     const status = document.querySelector('#orderStatus');
     const result = document.querySelector('#orderResult');
     orderInput.value = params.get('id') || localStorage.getItem('duum_last_order') || '';
+    if (params.get('email')) document.querySelector('#orderEmail').value = params.get('email');
 
     function label(value) {
       return {
@@ -80,6 +82,7 @@
           <div class="summary-line"><span>Pagamento</span><strong>${order.payment_status}</strong></div>
           <div class="summary-line"><span>Transportadora</span><strong>${order.carrier || '-'}</strong></div>
           <div class="summary-line"><span>Rastreio</span><strong>${order.tracking_code || '-'}</strong></div>
+          <div class="summary-line"><span>Frete</span><strong>${money(order.shipping_fee)}</strong></div>
           ${Number(order.discount_amount || 0) > 0 ? `<div class="summary-line"><span>Cupom ${order.discount_code}</span><strong>- ${money(order.discount_amount)}</strong></div>` : ''}
           <div class="summary-line total-line"><span>Total</span><strong>${money(order.total_amount)}</strong></div>
           ${order.items.map(item => `<div class="summary-line"><span>${item.product_name} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
@@ -92,6 +95,27 @@
 
     document.querySelector('#orderForm').addEventListener('submit', lookup);
     if (orderInput.value) lookup();
+
+    async function loadCustomerOrders() {
+      const email = document.querySelector('#orderEmail').value.trim() || params.get('email');
+      if (!email) return;
+      const wrap = document.querySelector('#customerOrders');
+      wrap.innerHTML = '<h3>Minhas compras</h3><p class="summary-note">Carregando historico...</p>';
+      try {
+        const response = await fetch(`/api/customer-orders?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Nao foi possivel carregar pedidos.');
+        wrap.innerHTML = `<h3>Minhas compras</h3>${(data.orders || []).map(order => `
+          <a class="order-card" href="pedido.html?id=${encodeURIComponent(order.id)}&email=${encodeURIComponent(email)}">
+            <strong>${order.id}</strong>
+            <span>${label(order.status)} - ${money(order.total_amount)}</span>
+            <small>${order.tracking_code ? `Rastreio: ${order.tracking_code}` : `${order.item_count || 0} item(ns)`}</small>
+          </a>`).join('') || '<p class="summary-note">Nenhuma compra encontrada para este e-mail.</p>'}`;
+      } catch (error) {
+        wrap.innerHTML = `<h3>Minhas compras</h3><p class="checkout-status failure">${error.message}</p>`;
+      }
+    }
+    loadCustomerOrders();
   </script>
 </body>
 </html>
