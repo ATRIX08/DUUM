@@ -1,7 +1,7 @@
 'use strict';
 
-const { normalizeCart } = require('./_catalog');
 const { methodNotAllowed, readJson, sendJson } = require('./_http');
+const { attachPreference, createPendingOrder } = require('./_orders');
 
 const MERCADO_PAGO_API = 'https://api.mercadopago.com/checkout/preferences';
 
@@ -40,13 +40,13 @@ async function createPreference(req, res) {
     }
 
     const body = await readJson(req);
-    const items = normalizeCart(body.cart);
     const customer = body.customer || {};
     const baseUrl = getBaseUrl(req);
     const orderId = `DUUM-${Date.now()}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
+    const order = await createPendingOrder({ orderId, cart: body.cart, customer });
 
     const preference = {
-      items,
+      items: order.items,
       external_reference: orderId,
       statement_descriptor: 'DUUM',
       payer: {
@@ -99,11 +99,14 @@ async function createPreference(req, res) {
     }
 
     const useSandbox = process.env.MERCADOPAGO_USE_SANDBOX === 'true' || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+    const paymentUrl = useSandbox ? (mpPayload.sandbox_init_point || mpPayload.init_point) : mpPayload.init_point;
+
+    await attachPreference(orderId, mpPayload.id, paymentUrl);
 
     return sendJson(res, 200, {
       id: mpPayload.id,
       orderId,
-      payment_url: useSandbox ? (mpPayload.sandbox_init_point || mpPayload.init_point) : mpPayload.init_point,
+      payment_url: paymentUrl,
       init_point: mpPayload.init_point,
       sandbox_init_point: mpPayload.sandbox_init_point
     });

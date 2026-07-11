@@ -37,6 +37,25 @@ npm start
 
 Nunca coloque o Access Token dentro do HTML ou do JavaScript do navegador.
 
+## Banco de dados
+O projeto usa PostgreSQL por `DATABASE_URL`. Recomendado para Vercel: Neon ou Supabase.
+
+Depois de configurar `DATABASE_URL`, rode:
+
+```bash
+npm run db:setup
+```
+
+Isso cria as tabelas principais e sincroniza os produtos atuais da DUUM.
+
+Tabelas criadas:
+- `customers`
+- `suppliers`
+- `products`
+- `orders`
+- `order_items`
+- `payment_events`
+
 ## Antes de vender de verdade
 1. Troque WhatsApp, e-mail, CNPJ, razao social e endereco.
 2. Substitua as imagens e produtos pelos itens autorizados pelo fornecedor.
@@ -53,6 +72,7 @@ Nunca coloque o Access Token dentro do HTML ou do JavaScript do navegador.
 - Configure `MERCADOPAGO_ACCESS_TOKEN` nas variaveis de ambiente da hospedagem.
 - Configure `PUBLIC_BASE_URL` com o dominio final, por exemplo `https://duum.com.br`.
 - Configure `MERCADOPAGO_WEBHOOK_SECRET` com a assinatura secreta gerada na tela de Webhooks.
+- Configure `DATABASE_URL` com a conexao PostgreSQL de producao.
 - Configure no painel do Mercado Pago o webhook:
 
 ```txt

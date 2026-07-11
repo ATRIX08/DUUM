@@ -1,0 +1,141 @@
+'use strict';
+
+const { normalizeCart } = require('./_catalog');
+const { hasDatabase, query, withTransaction } = require('./_db');
+
+function cleanText(value, maxLength) {
+  return String(value || '').trim().slice(0, maxLength);
+}
+
+function normalizeCustomer(customer = {}) {
+  return {
+    name: cleanText(customer.name, 100),
+    email: cleanText(customer.email, 160).toLowerCase(),
+    phone: cleanText(customer.phone, 30),
+    cep: cleanText(customer.cep, 12),
+    address: cleanText(customer.address, 180),
+    number: cleanText(customer.number, 20),
+    city: cleanText(customer.city, 100)
+  };
+}
+
+function calculateTotal(items) {
+  return Number(items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0).toFixed(2));
+}
+
+async function createPendingOrder({ orderId, cart, customer }) {
+  const items = normalizeCart(cart);
+  const normalizedCustomer = normalizeCustomer(customer);
+  const total = calculateTotal(items);
+
+  if (!hasDatabase()) {
+    return { orderId, items, total, saved: false };
+  }
+
+  await withTransaction(async client => {
+    const customerResult = await client.query(
+      `insert into customers (name, email, phone, cep, address, number, city)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       returning id`,
+      [
+        normalizedCustomer.name,
+        normalizedCustomer.email,
+        normalizedCustomer.phone,
+        normalizedCustomer.cep,
+        normalizedCustomer.address,
+        normalizedCustomer.number,
+        normalizedCustomer.city
+      ]
+    );
+
+    const customerId = customerResult.rows[0].id;
+
+    await client.query(
+      `insert into orders (id, customer_id, status, payment_status, total_amount, currency)
+       values ($1, $2, 'pending_payment', 'pending', $3, 'BRL')
+       on conflict (id) do update set
+         customer_id = excluded.customer_id,
+         status = excluded.status,
+         payment_status = excluded.payment_status,
+         total_amount = excluded.total_amount,
+         updated_at = now()`,
+      [orderId, customerId, total]
+    );
+
+    await client.query('delete from order_items where order_id = $1', [orderId]);
+
+    for (const item of items) {
+      await client.query(
+        `insert into order_items (order_id, product_id, product_name, quantity, unit_price, total_price)
+         values ($1, $2, $3, $4, $5, $6)`,
+        [
+          orderId,
+          item.id,
+          item.title,
+          item.quantity,
+          item.unit_price,
+          Number((item.unit_price * item.quantity).toFixed(2))
+        ]
+      );
+    }
+  });
+
+  return { orderId, items, total, saved: true };
+}
+
+async function attachPreference(orderId, preferenceId, paymentUrl) {
+  if (!hasDatabase()) return;
+  await query(
+    `update orders
+     set mercado_pago_preference_id = $2,
+         checkout_url = $3,
+         updated_at = now()
+     where id = $1`,
+    [orderId, preferenceId, paymentUrl]
+  );
+}
+
+async function recordPaymentEvent({ paymentId, topic, rawPayload, payment }) {
+  if (!hasDatabase()) return;
+
+  const orderId = payment?.external_reference || rawPayload?.external_reference || rawPayload?.metadata?.order_id || null;
+  const status = payment?.status || null;
+  const statusDetail = payment?.status_detail || null;
+
+  await withTransaction(async client => {
+    await client.query(
+      `insert into payment_events (provider, provider_payment_id, topic, order_id, status, status_detail, raw_payload)
+       values ('mercadopago', $1, $2, $3, $4, $5, $6)`,
+      [
+        paymentId ? String(paymentId) : null,
+        topic || null,
+        orderId,
+        status,
+        statusDetail,
+        JSON.stringify({ rawPayload, payment })
+      ]
+    );
+
+    if (orderId) {
+      const paymentStatus = status || 'updated';
+      const orderStatus = status === 'approved' ? 'paid' : status === 'rejected' ? 'payment_rejected' : 'pending_payment';
+
+      await client.query(
+        `update orders
+         set mercado_pago_payment_id = coalesce($2, mercado_pago_payment_id),
+             payment_status = $3,
+             status = $4,
+             paid_at = case when $3 = 'approved' then coalesce(paid_at, now()) else paid_at end,
+             updated_at = now()
+         where id = $1`,
+        [orderId, paymentId ? String(paymentId) : null, paymentStatus, orderStatus]
+      );
+    }
+  });
+}
+
+module.exports = {
+  attachPreference,
+  createPendingOrder,
+  recordPaymentEvent
+};

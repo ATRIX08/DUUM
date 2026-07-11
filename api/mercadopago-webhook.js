@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { readJson, sendJson } = require('./_http');
+const { recordPaymentEvent } = require('./_orders');
 
 function parseSignatureHeader(header) {
   return String(header || '').split(',').reduce((acc, part) => {
@@ -61,6 +62,7 @@ async function mercadopagoWebhook(req, res) {
 
     if (body.live_mode === false) {
       console.log('[Mercado Pago webhook simulation]', { topic, paymentId });
+      await recordPaymentEvent({ paymentId, topic, rawPayload: body, payment: null });
       return sendJson(res, 200, { received: true, simulation: true });
     }
 
@@ -71,6 +73,7 @@ async function mercadopagoWebhook(req, res) {
         }
       });
       const payment = await response.json().catch(() => ({}));
+      await recordPaymentEvent({ paymentId, topic, rawPayload: body, payment });
       console.log('[Mercado Pago webhook]', {
         paymentId,
         status: payment.status,
@@ -78,6 +81,7 @@ async function mercadopagoWebhook(req, res) {
         external_reference: payment.external_reference
       });
     } else {
+      await recordPaymentEvent({ paymentId, topic, rawPayload: body, payment: null });
       console.log('[Mercado Pago webhook]', { topic, paymentId, body });
     }
 
