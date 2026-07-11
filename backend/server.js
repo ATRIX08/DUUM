@@ -59,7 +59,7 @@ const server = http.createServer((req, res) => {
     return createPreference(req, res);
   }
 
-  if (req.url.startsWith('/api/mercadopago-webhook')) {
+  if (req.url.startsWith('/api/mercadopago-webhook') || req.url.startsWith('/api/webhook')) {
     return mercadopagoWebhook(req, res);
   }
 

@@ -59,6 +59,11 @@ async function mercadopagoWebhook(req, res) {
     const paymentId = body?.data?.id || url.searchParams.get('data.id') || url.searchParams.get('id');
     const topic = body?.type || url.searchParams.get('type') || url.searchParams.get('topic');
 
+    if (body.live_mode === false) {
+      console.log('[Mercado Pago webhook simulation]', { topic, paymentId });
+      return sendJson(res, 200, { received: true, simulation: true });
+    }
+
     if (paymentId && topic === 'payment' && process.env.MERCADOPAGO_ACCESS_TOKEN) {
       const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: {
