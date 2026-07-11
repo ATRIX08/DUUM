@@ -5,6 +5,18 @@ const state = {
   coupons: [],
   customers: [],
   dashboard: null,
+  filters: {
+    couponStatus: 'all',
+    coupons: '',
+    customerAccount: 'all',
+    customers: '',
+    leads: '',
+    orderStatus: 'all',
+    orders: '',
+    productStatus: 'all',
+    products: '',
+    suppliers: ''
+  },
   leads: [],
   orders: [],
   products: [],
@@ -14,6 +26,7 @@ const state = {
 const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateTime = value => value ? new Date(value).toLocaleString('pt-BR') : '-';
 const qs = selector => document.querySelector(selector);
+const qsa = selector => Array.from(document.querySelectorAll(selector));
 
 function setStatus(message, type = '') {
   const status = qs('#adminStatus');
@@ -46,15 +59,34 @@ function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function normalize(value) {
+  return String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function includesAny(row, query, fields) {
+  if (!query) return true;
+  const search = normalize(query);
+  return fields.some(field => normalize(row[field]).includes(search));
+}
+
+function metricTrend(label, value) {
+  return `<small>${escapeHtml(label)}</small><span>${escapeHtml(value)}</span>`;
+}
+
+function activateTab(name) {
+  qsa('.admin-tab').forEach(item => item.classList.toggle('active', item.dataset.tab === name));
+  qsa('.admin-panel').forEach(item => item.classList.toggle('active', item.id === `${name}Panel`));
+}
+
 async function loadDashboard() {
   const data = await api('/api/admin-dashboard');
   state.dashboard = data;
   const summary = data.summary || {};
   qs('#dashboardCards').innerHTML = `
-    <div><strong>${summary.orders || 0}</strong><span>Pedidos totais</span></div>
-    <div><strong>${money(summary.gross_total)}</strong><span>Volume criado</span></div>
-    <div><strong>${summary.paid_orders || 0}</strong><span>Pedidos pagos</span></div>
-    <div><strong>${money(summary.paid_total)}</strong><span>Receita aprovada</span></div>`;
+    <div><small>Pedidos</small><strong>${summary.orders || 0}</strong>${metricTrend('Total criado', 'Todos os canais')}</div>
+    <div><small>GMV</small><strong>${money(summary.gross_total)}</strong>${metricTrend('Volume bruto', 'Pedidos emitidos')}</div>
+    <div><small>Aprovados</small><strong>${summary.paid_orders || 0}</strong>${metricTrend('Checkout Pro', 'Pagamentos pagos')}</div>
+    <div><small>Receita</small><strong>${money(summary.paid_total)}</strong>${metricTrend('Liquido aprovado', 'Base de vendas')}</div>`;
   qs('#statusTable').innerHTML = `
     <table><tbody>${(data.byStatus || []).map(row => `<tr><td><span class="pill">${escapeHtml(row.status)}</span></td><td>${row.count}</td></tr>`).join('') || '<tr><td>Nenhum pedido.</td></tr>'}</tbody></table>`;
   qs('#lowStockTable').innerHTML = `
@@ -64,10 +96,18 @@ async function loadDashboard() {
 async function loadOrders() {
   const data = await api('/api/admin-orders');
   state.orders = data.orders || [];
+  renderOrders();
+}
+
+function renderOrders() {
+  const orders = state.orders.filter(order => {
+    const statusMatch = state.filters.orderStatus === 'all' || order.status === state.filters.orderStatus || order.payment_status === state.filters.orderStatus;
+    return statusMatch && includesAny(order, state.filters.orders, ['id', 'customer_name', 'customer_email', 'payment_status', 'status']);
+  });
   qs('#ordersTable').innerHTML = `
     <table>
       <thead><tr><th>Pedido</th><th>Cliente</th><th>Total</th><th>Pagamento</th><th>Status</th><th></th></tr></thead>
-      <tbody>${state.orders.map(order => `
+      <tbody>${orders.map(order => `
         <tr>
           <td>${escapeHtml(order.id)}<small>${dateTime(order.created_at)}</small></td>
           <td>${escapeHtml(order.customer_name || '-')}<small>${escapeHtml(order.customer_email || '')}</small></td>
@@ -75,7 +115,7 @@ async function loadOrders() {
           <td><span class="pill">${escapeHtml(order.payment_status)}</span></td>
           <td><span class="pill">${escapeHtml(order.status)}</span></td>
           <td><button data-order="${escapeHtml(order.id)}">Abrir</button></td>
-        </tr>`).join('') || '<tr><td colspan="6">Nenhum pedido ainda.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="6">Nenhum pedido encontrado.</td></tr>'}</tbody>
     </table>`;
 }
 
@@ -131,23 +171,37 @@ async function saveOrderStatus(id) {
 async function loadProducts() {
   const data = await api('/api/admin-products');
   state.products = data.products || [];
+  renderProducts();
+}
+
+function renderProducts() {
+  const products = state.products.filter(product => {
+    const status = state.filters.productStatus;
+    const statusMatch =
+      status === 'all' ||
+      (status === 'active' && product.active !== false) ||
+      (status === 'inactive' && product.active === false) ||
+      (status === 'featured' && product.featured === true) ||
+      (status === 'low' && Number(product.stock_quantity || 0) <= 5);
+    return statusMatch && includesAny(product, state.filters.products, ['id', 'name', 'sku', 'category', 'supplier_name', 'supplier_sku']);
+  });
   qs('#productsTable').innerHTML = `
     <table>
       <thead><tr><th>ID</th><th>Produto</th><th>Preco</th><th>Estoque</th><th>Fornecedor</th><th>Ativo</th><th>Acoes</th></tr></thead>
-      <tbody>${state.products.map(product => `
+      <tbody>${products.map(product => `
         <tr>
           <td>${product.id}</td>
           <td>${escapeHtml(product.name)}<small>${escapeHtml(product.sku || product.category || '')}</small></td>
           <td>${money(product.price)}${product.old_price ? `<small>De ${money(product.old_price)}</small>` : ''}</td>
-          <td>${product.stock_quantity ?? 0}</td>
+          <td><span class="${Number(product.stock_quantity || 0) <= 5 ? 'stock-danger' : ''}">${product.stock_quantity ?? 0}</span></td>
           <td>${escapeHtml(product.supplier_name || '-')}</td>
-          <td>${product.active ? 'Sim' : 'Nao'}</td>
+          <td><span class="pill ${product.active ? 'pill-success' : 'pill-muted'}">${product.active ? 'Sim' : 'Nao'}</span></td>
           <td class="action-row">
             <button data-fill-product="${product.id}">Editar</button>
             <button data-promo-product="${product.id}">Promo 10%</button>
             <button data-toggle-product="${product.id}">${product.active ? 'Desativar' : 'Ativar'}</button>
           </td>
-        </tr>`).join('')}</tbody>
+        </tr>`).join('') || '<tr><td colspan="7">Nenhum produto encontrado.</td></tr>'}</tbody>
     </table>`;
 }
 
@@ -210,43 +264,64 @@ async function toggleProduct(id) {
 async function loadSuppliers() {
   const data = await api('/api/admin-suppliers');
   state.suppliers = data.suppliers || [];
+  renderSuppliers();
+}
+
+function renderSuppliers() {
+  const suppliers = state.suppliers.filter(supplier => includesAny(supplier, state.filters.suppliers, ['id', 'name', 'contact_name', 'email', 'phone', 'notes']));
   qs('#suppliersTable').innerHTML = `
     <table>
       <thead><tr><th>ID</th><th>Fornecedor</th><th>Contato</th><th>Produtos</th><th></th></tr></thead>
-      <tbody>${state.suppliers.map(supplier => `
+      <tbody>${suppliers.map(supplier => `
         <tr>
           <td>${supplier.id}</td>
           <td>${escapeHtml(supplier.name)}<small>${escapeHtml(supplier.notes || '')}</small></td>
           <td>${escapeHtml(supplier.contact_name || '-')}<small>${escapeHtml(supplier.phone || supplier.email || '')}</small></td>
           <td>${supplier.product_count}</td>
           <td><button data-fill-supplier="${supplier.id}">Editar</button></td>
-        </tr>`).join('') || '<tr><td colspan="5">Nenhum fornecedor cadastrado.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="5">Nenhum fornecedor encontrado.</td></tr>'}</tbody>
     </table>`;
 }
 
 async function loadLeads() {
   const data = await api('/api/admin-leads');
   state.leads = data.leads || [];
+  renderLeads();
+}
+
+function renderLeads() {
+  const leads = state.leads.filter(lead => includesAny(lead, state.filters.leads, ['email', 'source', 'coupon_code']));
   qs('#leadsTable').innerHTML = `
     <table>
       <thead><tr><th>E-mail</th><th>Origem</th><th>Cupom</th><th>Cadastro</th></tr></thead>
-      <tbody>${state.leads.map(lead => `
+      <tbody>${leads.map(lead => `
         <tr>
           <td>${escapeHtml(lead.email)}</td>
           <td>${escapeHtml(lead.source || '-')}</td>
           <td><span class="pill">${escapeHtml(lead.coupon_code || '-')}</span></td>
           <td>${dateTime(lead.created_at)}</td>
-        </tr>`).join('') || '<tr><td colspan="4">Nenhum lead ainda.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="4">Nenhum lead encontrado.</td></tr>'}</tbody>
     </table>`;
 }
 
 async function loadCoupons() {
   const data = await api('/api/admin-coupons');
   state.coupons = data.coupons || [];
+  renderCoupons();
+}
+
+function renderCoupons() {
+  const coupons = state.coupons.filter(coupon => {
+    const statusMatch =
+      state.filters.couponStatus === 'all' ||
+      (state.filters.couponStatus === 'active' && coupon.active !== false) ||
+      (state.filters.couponStatus === 'inactive' && coupon.active === false);
+    return statusMatch && includesAny(coupon, state.filters.coupons, ['code', 'type', 'expires_at']);
+  });
   qs('#couponsTable').innerHTML = `
     <table>
       <thead><tr><th>Cupom</th><th>Tipo</th><th>Valor</th><th>Minimo</th><th>Uso</th><th>Validade</th><th></th></tr></thead>
-      <tbody>${state.coupons.map(coupon => `
+      <tbody>${coupons.map(coupon => `
         <tr>
           <td>${escapeHtml(coupon.code)}<small>${coupon.active ? 'Ativo' : 'Inativo'}</small></td>
           <td>${coupon.type === 'fixed' ? 'Valor fixo' : 'Porcentagem'}</td>
@@ -255,7 +330,7 @@ async function loadCoupons() {
           <td>${coupon.used_count || 0}${coupon.max_uses ? ` / ${coupon.max_uses}` : ''}</td>
           <td>${coupon.expires_at ? dateTime(coupon.expires_at) : 'Sem vencimento'}</td>
           <td><button data-fill-coupon="${escapeHtml(coupon.code)}">Editar</button></td>
-        </tr>`).join('') || '<tr><td colspan="7">Nenhum cupom cadastrado.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="7">Nenhum cupom encontrado.</td></tr>'}</tbody>
     </table>`;
 }
 
@@ -286,18 +361,29 @@ async function saveCoupon(event) {
 async function loadCustomers() {
   const data = await api('/api/admin-customers');
   state.customers = data.customers || [];
+  renderCustomers();
+}
+
+function renderCustomers() {
+  const customers = state.customers.filter(customer => {
+    const accountMatch =
+      state.filters.customerAccount === 'all' ||
+      (state.filters.customerAccount === 'account' && customer.has_account) ||
+      (state.filters.customerAccount === 'guest' && !customer.has_account);
+    return accountMatch && includesAny(customer, state.filters.customers, ['id', 'name', 'email', 'phone', 'city']);
+  });
   qs('#customersTable').innerHTML = `
     <table>
       <thead><tr><th>Cliente</th><th>Contato</th><th>Conta</th><th>Pedidos</th><th>Total</th><th>Cadastro</th></tr></thead>
-      <tbody>${state.customers.map(customer => `
+      <tbody>${customers.map(customer => `
         <tr>
           <td>${escapeHtml(customer.name || '-')}<small>ID ${customer.id}</small></td>
           <td>${escapeHtml(customer.email || '-')}<small>${escapeHtml(customer.phone || customer.city || '')}</small></td>
-          <td>${customer.has_account ? 'Sim' : 'Nao'}</td>
+          <td><span class="pill ${customer.has_account ? 'pill-success' : 'pill-muted'}">${customer.has_account ? 'Sim' : 'Nao'}</span></td>
           <td>${customer.order_count || 0}</td>
           <td>${money(customer.total_spent)}</td>
           <td>${dateTime(customer.created_at)}</td>
-        </tr>`).join('') || '<tr><td colspan="6">Nenhum cliente ainda.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="6">Nenhum cliente encontrado.</td></tr>'}</tbody>
     </table>`;
 }
 
@@ -333,10 +419,13 @@ async function bootstrap() {
 document.addEventListener('click', async event => {
   const tab = event.target.closest('[data-tab]');
   if (tab) {
-    document.querySelectorAll('.admin-tab').forEach(item => item.classList.remove('active'));
-    document.querySelectorAll('.admin-panel').forEach(item => item.classList.remove('active'));
-    tab.classList.add('active');
-    qs(`#${tab.dataset.tab}Panel`).classList.add('active');
+    activateTab(tab.dataset.tab);
+  }
+
+  const jump = event.target.closest('[data-jump]');
+  if (jump) {
+    activateTab(jump.dataset.jump);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const orderButton = event.target.closest('[data-order]');
@@ -376,5 +465,46 @@ qs('#refreshLeads').addEventListener('click', () => loadLeads().catch(error => s
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));
 qs('#supplierForm').addEventListener('submit', event => saveSupplier(event).catch(error => setStatus(error.message, 'failure')));
 qs('#couponForm').addEventListener('submit', event => saveCoupon(event).catch(error => setStatus(error.message, 'failure')));
+
+qs('#orderSearch').addEventListener('input', event => {
+  state.filters.orders = event.target.value;
+  renderOrders();
+});
+qs('#orderStatusFilter').addEventListener('change', event => {
+  state.filters.orderStatus = event.target.value;
+  renderOrders();
+});
+qs('#productSearch').addEventListener('input', event => {
+  state.filters.products = event.target.value;
+  renderProducts();
+});
+qs('#productStatusFilter').addEventListener('change', event => {
+  state.filters.productStatus = event.target.value;
+  renderProducts();
+});
+qs('#supplierSearch').addEventListener('input', event => {
+  state.filters.suppliers = event.target.value;
+  renderSuppliers();
+});
+qs('#couponSearch').addEventListener('input', event => {
+  state.filters.coupons = event.target.value;
+  renderCoupons();
+});
+qs('#couponStatusFilter').addEventListener('change', event => {
+  state.filters.couponStatus = event.target.value;
+  renderCoupons();
+});
+qs('#customerSearch').addEventListener('input', event => {
+  state.filters.customers = event.target.value;
+  renderCustomers();
+});
+qs('#customerAccountFilter').addEventListener('change', event => {
+  state.filters.customerAccount = event.target.value;
+  renderCustomers();
+});
+qs('#leadSearch').addEventListener('input', event => {
+  state.filters.leads = event.target.value;
+  renderLeads();
+});
 
 bootstrap().catch(error => setStatus(error.message, 'failure'));

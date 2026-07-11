@@ -14,6 +14,10 @@
 <body class="admin-body">
   <header class="admin-top">
     <a class="logo" href="index.html">DUUM<span>ADMIN</span></a>
+    <div class="admin-live">
+      <span class="admin-live-dot"></span>
+      Operacao em tempo real
+    </div>
     <div class="admin-key">
       <input id="adminSecret" type="password" placeholder="Chave admin" autocomplete="off">
       <button id="saveSecret">Entrar</button>
@@ -21,131 +25,221 @@
   </header>
 
   <main class="admin-shell">
-    <section class="admin-hero">
-      <div>
-        <span class="eyebrow">OPERACAO</span>
-        <h1>Painel DUUM</h1>
-        <p>Pedidos, fornecedores e catalogo em um lugar so.</p>
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-card">
+        <span class="eyebrow">Central DUUM</span>
+        <h2>Controle total da loja</h2>
+        <p>Produtos, pedidos, clientes, cupons e fornecedores no mesmo painel.</p>
       </div>
-      <p id="adminStatus" class="checkout-status" aria-live="polite"></p>
-    </section>
-
-    <nav class="admin-tabs" aria-label="Areas do painel">
-      <button class="admin-tab active" data-tab="dashboard">Dashboard</button>
-      <button class="admin-tab" data-tab="orders">Pedidos</button>
-      <button class="admin-tab" data-tab="products">Produtos</button>
-      <button class="admin-tab" data-tab="suppliers">Fornecedores</button>
-      <button class="admin-tab" data-tab="coupons">Cupons</button>
-      <button class="admin-tab" data-tab="customers">Clientes</button>
-      <button class="admin-tab" data-tab="leads">Leads</button>
-    </nav>
-
-    <section class="admin-panel active" id="dashboardPanel">
-      <div class="admin-panel-head">
-        <h2>Visao geral</h2>
-        <button class="secondary-btn mini" id="refreshDashboard">Atualizar</button>
+      <nav class="admin-tabs" aria-label="Areas do painel">
+        <button class="admin-tab active" data-tab="dashboard"><span>01</span>Dashboard</button>
+        <button class="admin-tab" data-tab="orders"><span>02</span>Pedidos</button>
+        <button class="admin-tab" data-tab="products"><span>03</span>Produtos</button>
+        <button class="admin-tab" data-tab="suppliers"><span>04</span>Fornecedores</button>
+        <button class="admin-tab" data-tab="coupons"><span>05</span>Cupons</button>
+        <button class="admin-tab" data-tab="customers"><span>06</span>Clientes</button>
+        <button class="admin-tab" data-tab="leads"><span>07</span>Leads</button>
+      </nav>
+      <div class="admin-sidebar-note">
+        <strong>Atalho</strong>
+        <p>Use as buscas para encontrar produto, pedido ou cliente sem rolar a tela inteira.</p>
       </div>
-      <div class="admin-dashboard" id="dashboardCards"></div>
-      <div class="admin-two-col">
+    </aside>
+
+    <div class="admin-content">
+      <section class="admin-hero">
         <div>
-          <h3>Status dos pedidos</h3>
-          <div class="admin-table" id="statusTable"></div>
+          <span class="eyebrow">OPERACAO</span>
+          <h1>Painel DUUM</h1>
+          <p>Uma central mais forte para vender, precificar, acompanhar pagamentos e organizar fornecedores.</p>
         </div>
-        <div>
-          <h3>Estoque baixo</h3>
-          <div class="admin-table" id="lowStockTable"></div>
+        <div class="admin-hero-actions">
+          <button class="secondary-btn mini" data-jump="products">Novo produto</button>
+          <button class="secondary-btn mini" data-jump="coupons">Criar cupom</button>
+          <button class="secondary-btn mini" data-jump="orders">Ver pedidos</button>
         </div>
-      </div>
-    </section>
+        <p id="adminStatus" class="checkout-status" aria-live="polite"></p>
+      </section>
 
-    <section class="admin-panel" id="ordersPanel">
-      <div class="admin-panel-head">
-        <h2>Pedidos recentes</h2>
-        <button class="secondary-btn mini" id="refreshOrders">Atualizar</button>
-      </div>
-      <div class="admin-table" id="ordersTable"></div>
-      <div class="admin-detail" id="orderDetail"></div>
-    </section>
+      <section class="admin-panel active" id="dashboardPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Painel executivo</span>
+            <h2>Visao geral</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshDashboard">Atualizar</button>
+        </div>
+        <div class="admin-dashboard" id="dashboardCards"></div>
+        <div class="admin-two-col">
+          <div class="admin-insight">
+            <div class="admin-section-title">
+              <span>Status dos pedidos</span>
+              <small>Funil operacional</small>
+            </div>
+            <div class="admin-table" id="statusTable"></div>
+          </div>
+          <div class="admin-insight">
+            <div class="admin-section-title">
+              <span>Estoque baixo</span>
+              <small>Prioridade de reposicao</small>
+            </div>
+            <div class="admin-table" id="lowStockTable"></div>
+          </div>
+        </div>
+      </section>
 
-    <section class="admin-panel" id="productsPanel">
-      <div class="admin-panel-head">
-        <h2>Catalogo</h2>
-        <button class="secondary-btn mini" id="refreshProducts">Atualizar</button>
-      </div>
-      <form class="admin-form" id="productForm">
-        <input name="id" type="number" min="1" placeholder="ID" required>
-        <input name="sku" placeholder="SKU interno">
-        <input name="name" placeholder="Nome" required>
-        <input name="category" placeholder="Categoria">
-        <input name="price" type="number" step="0.01" min="0" placeholder="Preco" required>
-        <input name="old_price" type="number" step="0.01" min="0" placeholder="Preco antigo">
-        <input name="image_url" placeholder="URL da imagem">
-        <input name="supplier_id" type="number" min="1" placeholder="ID fornecedor">
-        <input name="supplier_sku" placeholder="SKU fornecedor">
-        <input name="supplier_cost" type="number" step="0.01" min="0" placeholder="Custo fornecedor">
-        <input name="stock_quantity" type="number" min="0" step="1" placeholder="Estoque">
-        <textarea name="description" placeholder="Descricao"></textarea>
-        <label class="checkline"><input name="active" type="checkbox" checked> Produto ativo</label>
-        <label class="checkline"><input name="featured" type="checkbox"> Destaque</label>
-        <button class="checkout-btn" type="submit">Salvar produto</button>
-      </form>
-      <div class="admin-table" id="productsTable"></div>
-    </section>
+      <section class="admin-panel" id="ordersPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Vendas</span>
+            <h2>Pedidos recentes</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshOrders">Atualizar</button>
+        </div>
+        <div class="admin-toolbar">
+          <input id="orderSearch" type="search" placeholder="Buscar pedido, cliente, e-mail ou status">
+          <select id="orderStatusFilter">
+            <option value="all">Todos os status</option>
+            <option value="paid">Pagos</option>
+            <option value="pending_payment">Pagamento pendente</option>
+            <option value="preparing">Preparando</option>
+            <option value="shipped">Enviados</option>
+            <option value="cancelled">Cancelados</option>
+          </select>
+        </div>
+        <div class="admin-table" id="ordersTable"></div>
+        <div class="admin-detail" id="orderDetail"></div>
+      </section>
 
-    <section class="admin-panel" id="suppliersPanel">
-      <div class="admin-panel-head">
-        <h2>Fornecedores</h2>
-        <button class="secondary-btn mini" id="refreshSuppliers">Atualizar</button>
-      </div>
-      <form class="admin-form" id="supplierForm">
-        <input name="id" type="number" min="1" placeholder="ID para editar">
-        <input name="name" placeholder="Nome do fornecedor" required>
-        <input name="contact_name" placeholder="Contato">
-        <input name="email" type="email" placeholder="E-mail">
-        <input name="phone" placeholder="Telefone">
-        <textarea name="notes" placeholder="Observacoes, prazos, link do catalogo"></textarea>
-        <button class="checkout-btn" type="submit">Salvar fornecedor</button>
-      </form>
-      <div class="admin-table" id="suppliersTable"></div>
-    </section>
+      <section class="admin-panel" id="productsPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Catalogo</span>
+            <h2>Produtos e precos</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshProducts">Atualizar</button>
+        </div>
+        <div class="admin-editor">
+          <form class="admin-form" id="productForm">
+            <input name="id" type="number" min="1" placeholder="ID" required>
+            <input name="sku" placeholder="SKU interno">
+            <input name="name" placeholder="Nome" required>
+            <input name="category" placeholder="Categoria">
+            <input name="price" type="number" step="0.01" min="0" placeholder="Preco" required>
+            <input name="old_price" type="number" step="0.01" min="0" placeholder="Preco antigo">
+            <input name="image_url" placeholder="URL da imagem">
+            <input name="supplier_id" type="number" min="1" placeholder="ID fornecedor">
+            <input name="supplier_sku" placeholder="SKU fornecedor">
+            <input name="supplier_cost" type="number" step="0.01" min="0" placeholder="Custo fornecedor">
+            <input name="stock_quantity" type="number" min="0" step="1" placeholder="Estoque">
+            <textarea name="description" placeholder="Descricao"></textarea>
+            <label class="checkline"><input name="active" type="checkbox" checked> Produto ativo</label>
+            <label class="checkline"><input name="featured" type="checkbox"> Destaque</label>
+            <button class="checkout-btn" type="submit">Salvar produto</button>
+          </form>
+        </div>
+        <div class="admin-toolbar">
+          <input id="productSearch" type="search" placeholder="Buscar produto, SKU, categoria ou fornecedor">
+          <select id="productStatusFilter">
+            <option value="all">Todos os produtos</option>
+            <option value="active">Ativos</option>
+            <option value="inactive">Inativos</option>
+            <option value="featured">Destaques</option>
+            <option value="low">Estoque baixo</option>
+          </select>
+        </div>
+        <div class="admin-table" id="productsTable"></div>
+      </section>
 
-    <section class="admin-panel" id="couponsPanel">
-      <div class="admin-panel-head">
-        <h2>Cupons e promocoes</h2>
-        <button class="secondary-btn mini" id="refreshCoupons">Atualizar</button>
-      </div>
-      <form class="admin-form" id="couponForm">
-        <input name="code" placeholder="Codigo do cupom" required>
-        <select name="type">
-          <option value="percent">Porcentagem</option>
-          <option value="fixed">Valor fixo</option>
-        </select>
-        <input name="value" type="number" min="0" step="0.01" placeholder="Desconto" required>
-        <input name="min_order_amount" type="number" min="0" step="0.01" placeholder="Pedido minimo">
-        <input name="max_uses" type="number" min="1" step="1" placeholder="Limite de usos">
-        <input name="starts_at" type="datetime-local">
-        <input name="expires_at" type="datetime-local">
-        <label class="checkline"><input name="active" type="checkbox" checked> Cupom ativo</label>
-        <button class="checkout-btn" type="submit">Salvar cupom</button>
-      </form>
-      <div class="admin-table" id="couponsTable"></div>
-    </section>
+      <section class="admin-panel" id="suppliersPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Sourcing</span>
+            <h2>Fornecedores</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshSuppliers">Atualizar</button>
+        </div>
+        <form class="admin-form compact" id="supplierForm">
+          <input name="id" type="number" min="1" placeholder="ID para editar">
+          <input name="name" placeholder="Nome do fornecedor" required>
+          <input name="contact_name" placeholder="Contato">
+          <input name="email" type="email" placeholder="E-mail">
+          <input name="phone" placeholder="Telefone">
+          <textarea name="notes" placeholder="Observacoes, prazos, link do catalogo"></textarea>
+          <button class="checkout-btn" type="submit">Salvar fornecedor</button>
+        </form>
+        <div class="admin-toolbar">
+          <input id="supplierSearch" type="search" placeholder="Buscar fornecedor, contato ou observacao">
+        </div>
+        <div class="admin-table" id="suppliersTable"></div>
+      </section>
 
-    <section class="admin-panel" id="customersPanel">
-      <div class="admin-panel-head">
-        <h2>Clientes</h2>
-        <button class="secondary-btn mini" id="refreshCustomers">Atualizar</button>
-      </div>
-      <div class="admin-table" id="customersTable"></div>
-    </section>
+      <section class="admin-panel" id="couponsPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Promocoes</span>
+            <h2>Cupons e campanhas</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshCoupons">Atualizar</button>
+        </div>
+        <form class="admin-form" id="couponForm">
+          <input name="code" placeholder="Codigo do cupom" required>
+          <select name="type">
+            <option value="percent">Porcentagem</option>
+            <option value="fixed">Valor fixo</option>
+          </select>
+          <input name="value" type="number" min="0" step="0.01" placeholder="Desconto" required>
+          <input name="min_order_amount" type="number" min="0" step="0.01" placeholder="Pedido minimo">
+          <input name="max_uses" type="number" min="1" step="1" placeholder="Limite de usos">
+          <input name="starts_at" type="datetime-local">
+          <input name="expires_at" type="datetime-local">
+          <label class="checkline"><input name="active" type="checkbox" checked> Cupom ativo</label>
+          <button class="checkout-btn" type="submit">Salvar cupom</button>
+        </form>
+        <div class="admin-toolbar">
+          <input id="couponSearch" type="search" placeholder="Buscar cupom, tipo ou validade">
+          <select id="couponStatusFilter">
+            <option value="all">Todos os cupons</option>
+            <option value="active">Ativos</option>
+            <option value="inactive">Inativos</option>
+          </select>
+        </div>
+        <div class="admin-table" id="couponsTable"></div>
+      </section>
 
-    <section class="admin-panel" id="leadsPanel">
-      <div class="admin-panel-head">
-        <h2>Leads e newsletter</h2>
-        <button class="secondary-btn mini" id="refreshLeads">Atualizar</button>
-      </div>
-      <div class="admin-table" id="leadsTable"></div>
-    </section>
+      <section class="admin-panel" id="customersPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Relacionamento</span>
+            <h2>Clientes</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshCustomers">Atualizar</button>
+        </div>
+        <div class="admin-toolbar">
+          <input id="customerSearch" type="search" placeholder="Buscar cliente, e-mail, telefone ou cidade">
+          <select id="customerAccountFilter">
+            <option value="all">Todos</option>
+            <option value="account">Com conta</option>
+            <option value="guest">Sem conta</option>
+          </select>
+        </div>
+        <div class="admin-table" id="customersTable"></div>
+      </section>
+
+      <section class="admin-panel" id="leadsPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Marketing</span>
+            <h2>Leads e newsletter</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshLeads">Atualizar</button>
+        </div>
+        <div class="admin-toolbar">
+          <input id="leadSearch" type="search" placeholder="Buscar e-mail, origem ou cupom">
+        </div>
+        <div class="admin-table" id="leadsTable"></div>
+      </section>
+    </div>
   </main>
 </body>
 </html>
