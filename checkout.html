@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Checkout seguro | DUUM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="topbar">Ambiente de demonstracao: nao insira dados reais de cartao</div>
+  <header class="header">
+    <a class="logo" href="index.html">DUUM<span>CURATED WEAR</span></a>
+    <a class="back-link" href="index.html">Voltar a loja</a>
+  </header>
+
+  <main class="checkout-page">
+    <section class="checkout-box">
+      <span class="eyebrow">CHECKOUT DUUM</span>
+      <h1>Finalizar pedido</h1>
+      <div class="notice">
+        <strong>Pagamento seguro:</strong> ao continuar, voce sera redirecionado para o ambiente do Mercado Pago. A DUUM nao solicita nem armazena dados completos de cartao.
+      </div>
+      <p class="checkout-status" id="checkoutStatus" aria-live="polite"></p>
+
+      <form id="checkoutForm">
+        <h3>Contato e entrega</h3>
+        <label for="name">Nome completo</label>
+        <input id="name" maxlength="100" autocomplete="name" required>
+
+        <label for="email">E-mail</label>
+        <input id="email" type="email" maxlength="120" autocomplete="email" required>
+
+        <label for="phone">Telefone</label>
+        <input id="phone" inputmode="numeric" maxlength="15" autocomplete="tel" required>
+
+        <label for="cep">CEP</label>
+        <input id="cep" inputmode="numeric" maxlength="9" autocomplete="postal-code" required>
+
+        <label for="address">Endereco</label>
+        <input id="address" maxlength="140" autocomplete="street-address" required>
+
+        <div class="row">
+          <div>
+            <label for="number">Numero</label>
+            <input id="number" maxlength="12" required>
+          </div>
+          <div>
+            <label for="city">Cidade</label>
+            <input id="city" maxlength="80" autocomplete="address-level2" required>
+          </div>
+        </div>
+
+        <label for="shipping">Entrega</label>
+        <select id="shipping">
+          <option>Entrega padrao: calculada apos integracao</option>
+        </select>
+        <button class="checkout-btn" type="submit">Continuar para pagamento seguro</button>
+      </form>
+    </section>
+
+    <aside class="checkout-box checkout-summary">
+      <h2>Resumo</h2>
+      <div id="summary"></div>
+      <div class="summary-line"><span>Frete</span><span>A calcular</span></div>
+      <div class="summary-line total-line"><strong>Total</strong><strong id="total"></strong></div>
+      <p class="summary-note">Os precos sao conferidos novamente no servidor antes de abrir o pagamento.</p>
+    </aside>
+  </main>
+
+  <script>
+    const products = {
+      1:['Vestido Midi Elegance',149.9],
+      2:['Conjunto Alfaiataria Areia',179.9],
+      3:['Camisa Premium Essential',99.9],
+      4:['Jaqueta Urban Black',219.9],
+      5:['Blazer Feminino Classic',189.9],
+      6:['Camiseta Minimal Cotton',69.9],
+      7:['Vestido Longo Serena',169.9],
+      8:['Moletom Urban Essential',139.9]
+    };
+    const legacyCart = localStorage.getItem('dumke_cart');
+    if (legacyCart && !localStorage.getItem('duum_cart')) localStorage.setItem('duum_cart', legacyCart);
+    const cart = JSON.parse(localStorage.getItem('duum_cart') || '[]');
+    const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+    let total = 0;
+    document.querySelector('#summary').innerHTML = cart.map(item => {
+      const product = products[item.id];
+      if (!product) return '';
+      total += product[1] * item.qty;
+      return `<div class="summary-line"><span>${product[0]} x ${item.qty}</span><span>${money(product[1] * item.qty)}</span></div>`;
+    }).join('') || '<p>Sacola vazia.</p>';
+    document.querySelector('#total').textContent = money(total);
+    const checkoutStatus = document.querySelector('#checkoutStatus');
+    const checkoutForm = document.querySelector('#checkoutForm');
+    const checkoutButton = checkoutForm.querySelector('button[type="submit"]');
+    const params = new URLSearchParams(window.location.search);
+    const statusMessages = {
+      success: 'Pagamento aprovado. Obrigado por comprar na DUUM.',
+      pending: 'Pagamento pendente. Assim que o Mercado Pago confirmar, o pedido sera atualizado.',
+      failure: 'Pagamento nao concluido. Voce pode revisar a sacola e tentar novamente.'
+    };
+    if (statusMessages[params.get('status')]) {
+      checkoutStatus.textContent = statusMessages[params.get('status')];
+      checkoutStatus.classList.add(params.get('status'));
+    }
+
+    checkoutForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!cart.length) {
+        checkoutStatus.textContent = 'Sua sacola esta vazia.';
+        checkoutStatus.className = 'checkout-status failure';
+        return;
+      }
+
+      const customer = {
+        name: document.querySelector('#name').value,
+        email: document.querySelector('#email').value,
+        phone: document.querySelector('#phone').value,
+        cep: document.querySelector('#cep').value,
+        address: document.querySelector('#address').value,
+        number: document.querySelector('#number').value,
+        city: document.querySelector('#city').value
+      };
+
+      checkoutButton.disabled = true;
+      checkoutButton.textContent = 'Abrindo Mercado Pago...';
+      checkoutStatus.textContent = 'Criando pagamento seguro...';
+      checkoutStatus.className = 'checkout-status';
+
+      try {
+        const response = await fetch('/api/create-preference', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ cart, customer })
+        });
+        const responseText = await response.text();
+        let data = {};
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch (error) {
+          throw new Error('A rota de pagamento nao respondeu em JSON. Abra o site por http://localhost:3000 depois de rodar npm start.');
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Nao foi possivel criar o pagamento. Confirme se o servidor foi iniciado com npm start.');
+        }
+
+        const paymentUrl = data.payment_url || data.init_point || data.sandbox_init_point;
+        if (!paymentUrl) {
+          throw new Error('Mercado Pago nao retornou o link de pagamento.');
+        }
+
+        window.location.href = paymentUrl;
+      } catch (error) {
+        checkoutStatus.textContent = error.message;
+        checkoutStatus.className = 'checkout-status failure';
+        checkoutButton.disabled = false;
+        checkoutButton.textContent = 'Continuar para pagamento seguro';
+      }
+    });
+  </script>
+</body>
+</html>

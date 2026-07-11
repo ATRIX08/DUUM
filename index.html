@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DUUM: moda online com curadoria, compra segura e entrega rastreada.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>DUUM | Moda online com curadoria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <div class="topbar">Frete gratis acima de R$ 199 | Compra protegida | Atendimento pelo WhatsApp</div>
+
+  <header class="header">
+    <a class="logo" href="index.html" aria-label="DUUM inicio">DUUM<span>CURATED WEAR</span></a>
+    <button class="menu-btn" aria-label="Abrir menu" id="menuBtn">Menu</button>
+    <nav id="nav" aria-label="Menu principal">
+      <a href="#novidades">Novidades</a>
+      <a href="#feminino">Feminino</a>
+      <a href="#masculino">Masculino</a>
+      <a href="#sobre">Sobre</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="searchBtn" aria-label="Pesquisar">Buscar</button>
+      <button class="cart-btn" id="cartBtn" aria-label="Abrir carrinho">Sacola <span id="cartCount">0</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <span class="eyebrow">NOVA CURADORIA</span>
+        <h1>DUUM</h1>
+        <p>Moda selecionada para uma rotina mais elegante, com compra protegida, checkout claro e acompanhamento do pedido do inicio ao fim.</p>
+        <div class="hero-actions">
+          <a class="primary-btn" href="#novidades">Comprar agora</a>
+          <a class="ghost-btn" href="#sobre">Conhecer a loja</a>
+        </div>
+      </div>
+      <div class="hero-metrics" aria-label="Diferenciais da DUUM">
+        <div><strong>6x</strong><span>sem juros</span></div>
+        <div><strong>24h</strong><span>suporte util</span></div>
+        <div><strong>100%</strong><span>pedido rastreado</span></div>
+      </div>
+    </section>
+
+    <section class="trust-strip">
+      <div><strong>Pagamento seguro</strong><span>Fluxo preparado para gateway confiavel</span></div>
+      <div><strong>Troca facilitada</strong><span>Politicas claras antes da compra</span></div>
+      <div><strong>Pedido rastreado</strong><span>Status de envio e entrega</span></div>
+      <div><strong>Atendimento humano</strong><span>Suporte pelos canais oficiais</span></div>
+    </section>
+
+    <section class="section" id="novidades">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">ESCOLHAS DA SEMANA</span>
+          <h2>Novidades</h2>
+        </div>
+        <div class="filters" role="group" aria-label="Filtrar produtos">
+          <button class="filter active" data-filter="todos">Todos</button>
+          <button class="filter" data-filter="feminino">Feminino</button>
+          <button class="filter" data-filter="masculino">Masculino</button>
+        </div>
+      </div>
+      <div class="product-grid" id="productGrid"></div>
+    </section>
+
+    <section class="editorial" id="sobre">
+      <div class="editorial-image" aria-hidden="true"></div>
+      <div class="editorial-copy">
+        <span class="eyebrow">DUUM ESSENTIALS</span>
+        <h2>Uma loja pensada para vender com confianca.</h2>
+        <p>A DUUM trabalha com uma vitrine enxuta, informacoes objetivas e um fluxo de compra simples. Algumas pecas podem ser enviadas diretamente por parceiros selecionados, mantendo transparencia sobre prazos, trocas e atendimento.</p>
+        <a class="secondary-btn" href="politicas.html">Ver politicas da loja</a>
+      </div>
+    </section>
+
+    <section class="newsletter">
+      <h2>Ganhe 10% na primeira compra</h2>
+      <p>Cadastre seu e-mail para receber lancamentos, ofertas e novidades da DUUM.</p>
+      <form id="newsletterForm">
+        <label class="sr-only" for="newsletterEmail">Seu e-mail</label>
+        <input id="newsletterEmail" type="email" maxlength="120" placeholder="seuemail@exemplo.com" required autocomplete="email">
+        <button type="submit">Receber cupom</button>
+      </form>
+      <small id="newsletterMessage" aria-live="polite"></small>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      <a class="logo footer-logo" href="index.html">DUUM<span>CURATED WEAR</span></a>
+      <p>Moda online com curadoria, transparencia e atendimento de verdade.</p>
+    </div>
+    <div>
+      <h3>Ajuda</h3>
+      <a href="politicas.html#trocas">Trocas e devolucoes</a>
+      <a href="politicas.html#entrega">Entrega</a>
+      <a href="politicas.html#privacidade">Privacidade</a>
+    </div>
+    <div>
+      <h3>Atendimento</h3>
+      <a href="https://wa.me/5561999999999" rel="noopener noreferrer">WhatsApp</a>
+      <a href="mailto:contato@duum.com.br">contato@duum.com.br</a>
+      <span>Seg. a sex., 9h as 18h</span>
+    </div>
+    <div>
+      <h3>Empresa</h3>
+      <span>Razao social: preencher</span>
+      <span>CNPJ: preencher</span>
+      <span>Endereco: preencher</span>
+    </div>
+  </footer>
+
+  <div class="overlay" id="overlay"></div>
+
+  <aside class="drawer" id="cartDrawer" aria-hidden="true" aria-labelledby="cartTitle">
+    <div class="drawer-header">
+      <h2 id="cartTitle">Sua sacola</h2>
+      <button id="closeCart" aria-label="Fechar carrinho">Fechar</button>
+    </div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-footer">
+      <div class="total"><span>Total</span><strong id="cartTotal">R$ 0,00</strong></div>
+      <button class="checkout-btn" id="checkoutBtn">Ir para o checkout</button>
+      <small>O pagamento real deve ser integrado a um provedor seguro.</small>
+    </div>
+  </aside>
+
+  <dialog id="productDialog">
+    <button class="dialog-close" id="closeDialog" aria-label="Fechar">Fechar</button>
+    <div id="dialogContent"></div>
+  </dialog>
+
+  <div class="cookie-banner" id="cookieBanner">
+    <p>Usamos cookies essenciais para manter a sacola e melhorar a experiencia de navegacao.</p>
+    <div>
+      <button id="rejectCookies">Recusar opcionais</button>
+      <button id="acceptCookies">Aceitar</button>
+    </div>
+  </div>
+</body>
+</html>
