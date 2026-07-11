@@ -281,7 +281,7 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .header nav{display:none;position:absolute;left:0;right:0;top:100%;background:#fff;flex-direction:column;align-items:flex-start;padding:24px 5vw;border-bottom:1px solid var(--line);box-shadow:0 18px 36px rgba(17,19,24,.08)}
   .header nav.open{display:flex}
   .menu-btn{display:inline-flex;border:1px solid var(--line);padding:10px 12px}
-  .icon-btn{display:none}
+  #searchBtn{display:none}
   .hero{display:block;padding-top:230px}
   .hero-metrics{margin-top:34px}
   .trust-strip{grid-template-columns:1fr 1fr}
@@ -302,12 +302,13 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .admin-toolbar{grid-template-columns:1fr}
 }
 @media(max-width:700px){
-  .header{height:auto;min-height:74px;display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 18px}
+  .header{height:auto;min-height:74px;display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 18px;background:rgba(255,255,255,.97)}
   .header nav{top:100%}
-  .header-actions{grid-column:1/-1;width:100%;justify-content:space-between}
-  .cart-btn{flex:1}
+  .header-actions{grid-column:1/-1;width:100%;display:grid;grid-template-columns:1fr 1.15fr;gap:10px}
+  #accountBtn{display:inline-flex;align-items:center;justify-content:center;background:#fff7e8;border-color:#e8cda8;color:#6f421b;box-shadow:0 10px 22px rgba(197,139,75,.14)}
+  .cart-btn{width:100%;justify-content:center}
   .back-link{justify-self:end;align-self:center}
-  .hero{padding-top:150px}
+  .hero{padding-top:130px;background-position:58% center}
   .hero-metrics{width:100%}
   .filters{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}
   .filter{padding:11px 10px}
@@ -323,11 +324,11 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .admin-table table{min-width:680px}
 }
 @media(max-width:560px){
-  .topbar{font-size:10px}
+  .topbar{font-size:10px;letter-spacing:.04em}
   .header{padding:14px 18px}
   .logo{font-size:22px}
-  .cart-btn{padding:12px}
-  .hero{min-height:auto;padding:170px 18px 36px}
+  .icon-btn,.cart-btn{min-height:48px;padding:12px;border-radius:6px}
+  .hero{min-height:560px;padding:118px 18px 34px}
   .hero h1{font-size:clamp(54px,18vw,78px)}
   .hero p{font-size:15px}
   .hero-actions a{width:100%}
@@ -339,10 +340,11 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .section{padding:58px 18px}
   .section-heading{align-items:start;flex-direction:column}
   .filters{grid-template-columns:1fr}
-  .product-grid{grid-template-columns:1fr;gap:14px}
-  .product-image{height:240px}
-  .product-info{padding:13px}
-  .product-info h3{font-size:13px}
+  .product-grid{grid-template-columns:1fr;gap:16px}
+  .product-card{border-radius:8px;overflow:hidden}
+  .product-image{height:330px}
+  .product-info{padding:16px}
+  .product-info h3{font-size:15px;min-height:auto}
   .product-actions{grid-template-columns:1fr}
   .editorial{margin:0 18px 58px}
   .editorial-copy{padding:30px 22px}
@@ -370,13 +372,17 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 @media(max-width:430px){
   .topbar{line-height:1.45;padding:9px 12px}
   .header{grid-template-columns:1fr auto}
-  .menu-btn{padding:9px 10px;font-size:12px}
+  .menu-btn{padding:9px 10px;font-size:12px;border-radius:6px;background:#fff}
   .logo{font-size:20px}
   .logo span{letter-spacing:.2em}
-  .hero{padding:132px 14px 30px}
+  .header-actions{gap:8px}
+  #accountBtn,.cart-btn{font-size:13px}
+  .hero{min-height:540px;padding:104px 14px 30px}
   .hero h1{font-size:52px}
+  .hero p{line-height:1.62}
+  .hero-actions{gap:9px;margin-top:20px}
   .section-heading h2,.editorial h2,.newsletter h2,.legal h1{font-size:32px}
-  .product-image{height:300px}
+  .product-image{height:310px}
   .editorial{margin-left:14px;margin-right:14px}
   .editorial-image{height:280px}
   .newsletter{padding:52px 14px}
