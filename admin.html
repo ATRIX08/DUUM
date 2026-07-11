@@ -39,6 +39,9 @@
         <button class="admin-tab" data-tab="coupons"><span>05</span>Cupons</button>
         <button class="admin-tab" data-tab="customers"><span>06</span>Clientes</button>
         <button class="admin-tab" data-tab="leads"><span>07</span>Leads</button>
+        <button class="admin-tab" data-tab="campaigns"><span>08</span>Campanhas</button>
+        <button class="admin-tab" data-tab="reviews"><span>09</span>Avaliacoes</button>
+        <button class="admin-tab" data-tab="reports"><span>10</span>Financeiro</button>
       </nav>
       <div class="admin-sidebar-note">
         <strong>Atalho</strong>
@@ -249,6 +252,75 @@
           <input id="leadSearch" type="search" placeholder="Buscar e-mail, origem ou cupom">
         </div>
         <div class="admin-table" id="leadsTable"></div>
+      </section>
+
+      <section class="admin-panel" id="campaignsPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Vitrine</span>
+            <h2>Banners e campanhas</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshCampaigns">Atualizar</button>
+        </div>
+        <form class="admin-form" id="campaignForm">
+          <input name="id" type="number" min="1" placeholder="ID para editar">
+          <input name="title" placeholder="Titulo da campanha" required>
+          <input name="subtitle" placeholder="Subtitulo">
+          <input name="image_url" placeholder="URL da imagem">
+          <input name="cta_label" placeholder="Texto do botao">
+          <input name="cta_url" placeholder="Link do botao">
+          <input name="starts_at" type="datetime-local">
+          <input name="expires_at" type="datetime-local">
+          <label class="checkline"><input name="active" type="checkbox" checked> Campanha ativa</label>
+          <button class="checkout-btn" type="submit">Salvar campanha</button>
+        </form>
+        <div class="admin-table" id="campaignsTable"></div>
+      </section>
+
+      <section class="admin-panel" id="reviewsPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Prova social</span>
+            <h2>Avaliacoes dos clientes</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshReviews">Atualizar</button>
+        </div>
+        <div class="admin-toolbar">
+          <input id="reviewSearch" type="search" placeholder="Buscar produto, cliente, comentario ou nota">
+          <select id="reviewStatusFilter">
+            <option value="all">Todas</option>
+            <option value="approved">Aprovadas</option>
+            <option value="pending">Ocultas</option>
+          </select>
+        </div>
+        <div class="admin-table" id="reviewsTable"></div>
+      </section>
+
+      <section class="admin-panel" id="reportsPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Numeros da loja</span>
+            <h2>Relatorios financeiros</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshReports">Atualizar</button>
+        </div>
+        <div class="admin-dashboard reports-cards" id="reportsCards"></div>
+        <div class="admin-two-col">
+          <div class="admin-insight">
+            <div class="admin-section-title">
+              <span>Vendas por dia</span>
+              <small>Ultimos 30 dias</small>
+            </div>
+            <div class="admin-table" id="reportsDailyTable"></div>
+          </div>
+          <div class="admin-insight">
+            <div class="admin-section-title">
+              <span>Produtos campeoes</span>
+              <small>Ultimos 90 dias</small>
+            </div>
+            <div class="admin-table" id="reportsProductsTable"></div>
+          </div>
+        </div>
       </section>
     </div>
   </main>

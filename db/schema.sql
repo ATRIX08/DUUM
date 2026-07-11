@@ -107,6 +107,32 @@ create table if not exists coupons (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists campaigns (
+  id bigserial primary key,
+  title text not null,
+  subtitle text,
+  image_url text,
+  cta_label text,
+  cta_url text,
+  active boolean not null default true,
+  starts_at timestamptz,
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists product_reviews (
+  id bigserial primary key,
+  product_id integer not null references products(id) on delete cascade,
+  customer_name text not null,
+  customer_email text,
+  rating integer not null check (rating between 1 and 5),
+  comment text,
+  approved boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_orders_created_at on orders(created_at desc);
 create index if not exists idx_orders_payment_status on orders(payment_status);
 create index if not exists idx_payment_events_provider_payment_id on payment_events(provider_payment_id);
@@ -132,7 +158,21 @@ create index if not exists idx_orders_status on orders(status);
 create index if not exists idx_newsletter_created_at on newsletter_subscribers(created_at desc);
 create index if not exists idx_customer_accounts_customer_id on customer_accounts(customer_id);
 create index if not exists idx_coupons_active on coupons(active);
+create index if not exists idx_campaigns_active on campaigns(active);
+create index if not exists idx_product_reviews_product_id on product_reviews(product_id);
+create index if not exists idx_product_reviews_approved on product_reviews(approved);
 
 insert into coupons (code, type, value, min_order_amount, active)
 values ('DUUM10', 'percent', 10, 0, true)
 on conflict (code) do nothing;
+
+insert into campaigns (title, subtitle, image_url, cta_label, cta_url, active)
+values (
+  'Frete gratis acima de R$ 199',
+  'Aproveite a curadoria DUUM com entrega rastreada e pagamento seguro.',
+  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1400&q=84',
+  'Ver novidades',
+  '#novidades',
+  true
+)
+on conflict do nothing;

@@ -70,6 +70,28 @@ function renderProducts() {
     </article>`).join('') || '<div class="empty catalog-empty">Nenhuma roupa encontrada nesse tamanho.</div>';
 }
 
+async function loadCampaigns() {
+  const box = document.querySelector('#campaignShowcase');
+  if (!box) return;
+  try {
+    const response = await fetch('/api/campaigns');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !Array.isArray(data.campaigns) || !data.campaigns.length) return;
+    const campaign = data.campaigns[0];
+    box.hidden = false;
+    box.innerHTML = `
+      <div class="campaign-copy">
+        <span class="eyebrow">CAMPANHA ATIVA</span>
+        <h2>${safeText(campaign.title)}</h2>
+        <p>${safeText(campaign.subtitle || '')}</p>
+        <a class="secondary-btn" href="${safeText(campaign.cta_url || '#novidades')}">${safeText(campaign.cta_label || 'Comprar agora')}</a>
+      </div>
+      <div class="campaign-image" style="background-image:url('${safeText(campaign.image_url || '')}')"></div>`;
+  } catch (error) {
+    console.warn('Campanhas indisponiveis.', error);
+  }
+}
+
 async function loadCatalog() {
   try {
     const response = await fetch('/api/catalog');
@@ -343,3 +365,4 @@ renderCart();
 setAuthMode('login');
 updateAccountUi();
 loadCatalog();
+loadCampaigns();

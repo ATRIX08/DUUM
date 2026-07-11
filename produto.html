@@ -16,8 +16,37 @@
     <a class="logo" href="index.html">DUUM<span>CURATED WEAR</span></a>
     <a class="back-link" href="index.html">Voltar a loja</a>
   </header>
-  <main class="product-page" id="productPage">
-    <p class="checkout-status">Carregando produto...</p>
+  <main>
+    <section class="product-page" id="productPage">
+      <p class="checkout-status">Carregando produto...</p>
+    </section>
+    <section class="product-reviews" id="reviewsBox" hidden>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">AVALIACOES</span>
+          <h2>O que clientes acharam</h2>
+        </div>
+        <strong id="reviewSummary">0.0/5</strong>
+      </div>
+      <div class="reviews-layout">
+        <form class="review-form" id="reviewForm">
+          <input type="hidden" name="product_id" id="reviewProductId">
+          <input name="customer_name" id="reviewName" maxlength="100" placeholder="Seu nome" required>
+          <input name="customer_email" id="reviewEmail" type="email" maxlength="160" placeholder="Seu e-mail">
+          <select name="rating" required>
+            <option value="5">5 estrelas</option>
+            <option value="4">4 estrelas</option>
+            <option value="3">3 estrelas</option>
+            <option value="2">2 estrelas</option>
+            <option value="1">1 estrela</option>
+          </select>
+          <textarea name="comment" maxlength="600" placeholder="Conte como foi sua experiencia"></textarea>
+          <button class="checkout-btn" type="submit">Enviar avaliacao</button>
+          <small id="reviewStatus" class="checkout-status" aria-live="polite"></small>
+        </form>
+        <div class="review-list" id="reviewList"></div>
+      </div>
+    </section>
   </main>
   <script src="assets/product.js" defer></script>
 </body>

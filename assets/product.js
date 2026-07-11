@@ -9,6 +9,8 @@ const safe = value => {
 const params = new URLSearchParams(window.location.search);
 const id = Number(params.get('id'));
 let product;
+let reviews = [];
+let reviewSummary = { count: 0, average: 0 };
 
 function sizeStock(size) {
   return Number((product.sizeStock || product.size_stock || {})[size] || product.stock || 0);
@@ -42,6 +44,67 @@ function render() {
       <button class="checkout-btn" id="buyBtn" data-size="${safe(selected)}" ${sizeStock(selected) <= 0 ? 'disabled' : ''}>Comprar agora</button>
       <p class="summary-note">Frete e prazo aparecem no checkout pelo CEP.</p>
     </section>`;
+  document.querySelector('#reviewsBox').hidden = false;
+  document.querySelector('#reviewProductId').value = product.id;
+  prefillReviewUser();
+  loadReviews();
+}
+
+function stars(value) {
+  const rating = Math.max(0, Math.min(5, Number(value || 0)));
+  return '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+}
+
+function renderReviews() {
+  document.querySelector('#reviewSummary').textContent = `${Number(reviewSummary.average || 0).toFixed(1)}/5 (${reviewSummary.count || 0})`;
+  document.querySelector('#reviewList').innerHTML = reviews.map(review => `
+    <article class="review-card">
+      <div><strong>${safe(review.customer_name)}</strong><span>${stars(review.rating)}</span></div>
+      <p>${safe(review.comment || 'Cliente avaliou este produto.')}</p>
+    </article>`).join('') || '<p class="empty">Esse produto ainda nao tem avaliacoes.</p>';
+}
+
+async function loadReviews() {
+  const response = await fetch(`/api/reviews?product_id=${encodeURIComponent(product.id)}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) return;
+  reviews = data.reviews || [];
+  reviewSummary = data.summary || reviewSummary;
+  renderReviews();
+}
+
+function prefillReviewUser() {
+  try {
+    const account = JSON.parse(localStorage.getItem('duum_account') || 'null');
+    if (!account) return;
+    document.querySelector('#reviewName').value = account.name || '';
+    document.querySelector('#reviewEmail').value = account.email || '';
+  } catch {}
+}
+
+async function submitReview(event) {
+  event.preventDefault();
+  const status = document.querySelector('#reviewStatus');
+  status.textContent = 'Enviando avaliacao...';
+  status.className = 'checkout-status';
+  const body = Object.fromEntries(new FormData(event.currentTarget).entries());
+
+  try {
+    const response = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Nao foi possivel salvar.');
+    status.textContent = 'Avaliacao publicada. Obrigado!';
+    status.className = 'checkout-status success';
+    event.currentTarget.elements.comment.value = '';
+    await loadReviews();
+  } catch (error) {
+    status.textContent = error.message;
+    status.className = 'checkout-status failure';
+  }
 }
 
 document.addEventListener('click', event => {
@@ -63,6 +126,8 @@ document.addEventListener('click', event => {
 
   if (event.target.closest('#buyBtn')) addToCart(document.querySelector('#buyBtn').dataset.size);
 });
+
+document.querySelector('#reviewForm').addEventListener('submit', submitReview);
 
 fetch('/api/catalog')
   .then(response => response.json())

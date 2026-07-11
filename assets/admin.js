@@ -2,6 +2,7 @@
 
 const state = {
   secret: localStorage.getItem('duum_admin_secret') || '',
+  campaigns: [],
   coupons: [],
   customers: [],
   dashboard: null,
@@ -15,11 +16,15 @@ const state = {
     orders: '',
     productStatus: 'all',
     products: '',
+    reviewStatus: 'all',
+    reviews: '',
     suppliers: ''
   },
   leads: [],
   orders: [],
   products: [],
+  reports: null,
+  reviews: [],
   suppliers: []
 };
 
@@ -79,6 +84,13 @@ function formatSizeStock(value) {
     try { return JSON.parse(value); } catch { return {}; }
   })() : (value || {});
   return Object.entries(stock).map(([size, qty]) => `${size}:${qty}`).join(',');
+}
+
+function toDateTimeLocal(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 16);
 }
 
 function readImage(file, maxWidth = 1200, quality = 0.78) {
@@ -363,6 +375,136 @@ async function loadLeads() {
   renderLeads();
 }
 
+async function loadCampaigns() {
+  const data = await api('/api/admin-campaigns');
+  state.campaigns = data.campaigns || [];
+  renderCampaigns();
+}
+
+function renderCampaigns() {
+  qs('#campaignsTable').innerHTML = `
+    <table>
+      <thead><tr><th>ID</th><th>Campanha</th><th>Periodo</th><th>Status</th><th></th></tr></thead>
+      <tbody>${state.campaigns.map(campaign => `
+        <tr>
+          <td>${campaign.id}</td>
+          <td>${escapeHtml(campaign.title)}<small>${escapeHtml(campaign.subtitle || '')}</small><small>${escapeHtml(campaign.cta_label || '')} -> ${escapeHtml(campaign.cta_url || '')}</small></td>
+          <td>${campaign.starts_at ? dateTime(campaign.starts_at) : 'Inicio imediato'}<small>${campaign.expires_at ? `Ate ${dateTime(campaign.expires_at)}` : 'Sem vencimento'}</small></td>
+          <td><span class="pill ${campaign.active ? 'pill-success' : 'pill-muted'}">${campaign.active ? 'Ativa' : 'Inativa'}</span></td>
+          <td class="action-row">
+            <button data-fill-campaign="${campaign.id}">Editar</button>
+            <button data-toggle-campaign="${campaign.id}">${campaign.active ? 'Desativar' : 'Ativar'}</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="5">Nenhuma campanha cadastrada.</td></tr>'}</tbody>
+    </table>`;
+}
+
+function fillCampaign(id) {
+  const campaign = state.campaigns.find(item => Number(item.id) === Number(id));
+  if (!campaign) return;
+  const form = qs('#campaignForm');
+  ['id','title','subtitle','image_url','cta_label','cta_url'].forEach(name => {
+    form.elements[name].value = campaign[name] ?? '';
+  });
+  form.elements.starts_at.value = toDateTimeLocal(campaign.starts_at);
+  form.elements.expires_at.value = toDateTimeLocal(campaign.expires_at);
+  form.elements.active.checked = campaign.active !== false;
+}
+
+async function saveCampaign(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = formData(form);
+  data.active = form.elements.active.checked;
+  await api('/api/admin-campaigns', { method: 'POST', body: JSON.stringify(data) });
+  setStatus('Campanha salva.', 'success');
+  form.reset();
+  form.elements.active.checked = true;
+  await loadCampaigns();
+}
+
+async function toggleCampaign(id) {
+  const campaign = state.campaigns.find(item => Number(item.id) === Number(id));
+  if (!campaign) return;
+  await api('/api/admin-campaigns', {
+    method: 'POST',
+    body: JSON.stringify({ ...campaign, active: campaign.active === false })
+  });
+  setStatus(campaign.active === false ? 'Campanha ativada.' : 'Campanha desativada.', 'success');
+  await loadCampaigns();
+}
+
+async function loadReviews() {
+  const data = await api('/api/admin-reviews');
+  state.reviews = data.reviews || [];
+  renderReviews();
+}
+
+function renderReviews() {
+  const reviews = state.reviews.filter(review => {
+    const statusMatch =
+      state.filters.reviewStatus === 'all' ||
+      (state.filters.reviewStatus === 'approved' && review.approved !== false) ||
+      (state.filters.reviewStatus === 'pending' && review.approved === false);
+    return statusMatch && includesAny(review, state.filters.reviews, ['product_name', 'customer_name', 'customer_email', 'comment', 'rating']);
+  });
+  qs('#reviewsTable').innerHTML = `
+    <table>
+      <thead><tr><th>Produto</th><th>Cliente</th><th>Nota</th><th>Comentario</th><th>Status</th><th></th></tr></thead>
+      <tbody>${reviews.map(review => `
+        <tr>
+          <td>${escapeHtml(review.product_name || `Produto ${review.product_id}`)}<small>ID ${review.product_id}</small></td>
+          <td>${escapeHtml(review.customer_name)}<small>${escapeHtml(review.customer_email || '')}</small></td>
+          <td><span class="review-stars">${'★'.repeat(Number(review.rating || 0))}${'☆'.repeat(5 - Number(review.rating || 0))}</span></td>
+          <td>${escapeHtml(review.comment || '-')}<small>${dateTime(review.created_at)}</small></td>
+          <td><span class="pill ${review.approved ? 'pill-success' : 'pill-muted'}">${review.approved ? 'Aprovada' : 'Oculta'}</span></td>
+          <td><button data-toggle-review="${review.id}" data-review-approved="${review.approved ? 'false' : 'true'}">${review.approved ? 'Ocultar' : 'Aprovar'}</button></td>
+        </tr>`).join('') || '<tr><td colspan="6">Nenhuma avaliacao encontrada.</td></tr>'}</tbody>
+    </table>`;
+}
+
+async function toggleReview(id, approved) {
+  await api('/api/admin-reviews', {
+    method: 'POST',
+    body: JSON.stringify({ id, approved: approved === 'true' })
+  });
+  setStatus('Avaliacao atualizada.', 'success');
+  await loadReviews();
+}
+
+async function loadReports() {
+  const data = await api('/api/admin-reports');
+  state.reports = data;
+  renderReports();
+}
+
+function renderReports() {
+  const summary = state.reports?.summary || {};
+  const stock = state.reports?.stockValue || {};
+  qs('#reportsCards').innerHTML = `
+    <div><small>Receita paga</small><strong>${money(summary.paid_total)}</strong>${metricTrend('Pedidos aprovados', summary.paid_orders || 0)}</div>
+    <div><small>Lucro estimado</small><strong>${money(summary.estimated_profit)}</strong>${metricTrend('Custo produtos', money(summary.estimated_product_cost))}</div>
+    <div><small>Descontos</small><strong>${money(summary.discount_total)}</strong>${metricTrend('Frete cobrado', money(summary.shipping_total))}</div>
+    <div><small>Estoque ativo</small><strong>${money(stock.stock_sale_value)}</strong>${metricTrend('Custo em estoque', money(stock.stock_cost))}</div>`;
+  qs('#reportsDailyTable').innerHTML = `
+    <table>
+      <thead><tr><th>Dia</th><th>Pedidos</th><th>Receita paga</th></tr></thead>
+      <tbody>${(state.reports?.byDay || []).map(row => `
+        <tr><td>${dateTime(row.day).split(',')[0]}</td><td>${row.orders}</td><td>${money(row.paid_total)}</td></tr>`).join('') || '<tr><td colspan="3">Sem vendas no periodo.</td></tr>'}</tbody>
+    </table>`;
+  qs('#reportsProductsTable').innerHTML = `
+    <table>
+      <thead><tr><th>Produto</th><th>Qtd.</th><th>Receita</th><th>Lucro est.</th></tr></thead>
+      <tbody>${(state.reports?.topProducts || []).map(row => `
+        <tr>
+          <td>${escapeHtml(row.product_name)}<small>ID ${row.product_id || '-'}</small></td>
+          <td>${row.quantity}</td>
+          <td>${money(row.revenue)}</td>
+          <td>${money(row.estimated_profit)}</td>
+        </tr>`).join('') || '<tr><td colspan="4">Sem produtos vendidos no periodo.</td></tr>'}</tbody>
+    </table>`;
+}
+
 function renderLeads() {
   const leads = state.leads.filter(lead => includesAny(lead, state.filters.leads, ['email', 'source', 'coupon_code']));
   qs('#leadsTable').innerHTML = `
@@ -486,7 +628,7 @@ async function bootstrap() {
     return;
   }
   setStatus('Carregando painel...');
-  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers(), loadCoupons(), loadCustomers(), loadLeads()]);
+  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers(), loadCoupons(), loadCustomers(), loadLeads(), loadCampaigns(), loadReviews(), loadReports()]);
   setStatus('Painel carregado.', 'success');
 }
 
@@ -523,6 +665,15 @@ document.addEventListener('click', async event => {
   const fillCouponButton = event.target.closest('[data-fill-coupon]');
   if (fillCouponButton) fillCoupon(fillCouponButton.dataset.fillCoupon);
 
+  const fillCampaignButton = event.target.closest('[data-fill-campaign]');
+  if (fillCampaignButton) fillCampaign(fillCampaignButton.dataset.fillCampaign);
+
+  const toggleCampaignButton = event.target.closest('[data-toggle-campaign]');
+  if (toggleCampaignButton) toggleCampaign(toggleCampaignButton.dataset.toggleCampaign).catch(error => setStatus(error.message, 'failure'));
+
+  const toggleReviewButton = event.target.closest('[data-toggle-review]');
+  if (toggleReviewButton) toggleReview(toggleReviewButton.dataset.toggleReview, toggleReviewButton.dataset.reviewApproved).catch(error => setStatus(error.message, 'failure'));
+
   const copyAddress = event.target.closest('[data-copy-address]');
   if (copyAddress) {
     navigator.clipboard?.writeText(copyAddress.dataset.copyAddress);
@@ -542,9 +693,13 @@ qs('#refreshSuppliers').addEventListener('click', () => loadSuppliers().catch(er
 qs('#refreshCoupons').addEventListener('click', () => loadCoupons().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshCustomers').addEventListener('click', () => loadCustomers().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshLeads').addEventListener('click', () => loadLeads().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshCampaigns').addEventListener('click', () => loadCampaigns().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshReviews').addEventListener('click', () => loadReviews().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshReports').addEventListener('click', () => loadReports().catch(error => setStatus(error.message, 'failure')));
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));
 qs('#supplierForm').addEventListener('submit', event => saveSupplier(event).catch(error => setStatus(error.message, 'failure')));
 qs('#couponForm').addEventListener('submit', event => saveCoupon(event).catch(error => setStatus(error.message, 'failure')));
+qs('#campaignForm').addEventListener('submit', event => saveCampaign(event).catch(error => setStatus(error.message, 'failure')));
 qs('#productImageUpload').addEventListener('change', event => uploadMainImage(event).catch(error => setStatus(error.message, 'failure')));
 qs('#productGalleryUpload').addEventListener('change', event => uploadGalleryImages(event).catch(error => setStatus(error.message, 'failure')));
 
@@ -587,6 +742,14 @@ qs('#customerAccountFilter').addEventListener('change', event => {
 qs('#leadSearch').addEventListener('input', event => {
   state.filters.leads = event.target.value;
   renderLeads();
+});
+qs('#reviewSearch').addEventListener('input', event => {
+  state.filters.reviews = event.target.value;
+  renderReviews();
+});
+qs('#reviewStatusFilter').addEventListener('change', event => {
+  state.filters.reviewStatus = event.target.value;
+  renderReviews();
 });
 
 bootstrap().catch(error => setStatus(error.message, 'failure'));
