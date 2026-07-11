@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
+const { getDatabaseUrl } = require('../api/_db');
 
 function loadEnv() {
   const envPath = path.resolve(__dirname, '..', '.env');
@@ -23,7 +24,7 @@ async function main() {
   }
 
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: getDatabaseUrl(),
     ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false }
   });
 
