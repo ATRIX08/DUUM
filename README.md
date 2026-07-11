@@ -48,6 +48,8 @@ npm run db:setup
 
 Isso cria as tabelas principais e sincroniza os produtos atuais da DUUM.
 
+Em producao na Vercel, tambem existe o endpoint protegido `POST /api/admin-migrate`, que deve ser usado apenas com `ADMIN_MIGRATION_SECRET` configurado.
+
 Tabelas criadas:
 - `customers`
 - `suppliers`

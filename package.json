@@ -9,7 +9,7 @@
     "migrate": "node scripts/migrate.js",
     "seed:products": "node scripts/seed-products.js",
     "db:setup": "npm run migrate && npm run seed:products",
-    "check": "node --check assets/app.js && node --check backend/server.js && node --check api/_db.js && node --check api/_orders.js && node --check api/create-preference.js && node --check api/mercadopago-webhook.js && node --check api/webhook.js && node --check scripts/migrate.js && node --check scripts/seed-products.js"
+    "check": "node --check assets/app.js && node --check backend/server.js && node --check api/_db.js && node --check api/_orders.js && node --check api/admin-migrate.js && node --check api/create-preference.js && node --check api/mercadopago-webhook.js && node --check api/webhook.js && node --check scripts/migrate.js && node --check scripts/seed-products.js"
   },
   "engines": {
     "node": ">=18"
