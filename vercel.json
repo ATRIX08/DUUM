@@ -1,4 +1,19 @@
 {
+  "routes": [
+    {
+      "src": "/",
+      "methods": ["POST", "PUT", "PATCH", "OPTIONS"],
+      "dest": "/api/webhook"
+    },
+    {
+      "src": "/webhook/?",
+      "dest": "/api/webhook"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
