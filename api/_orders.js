@@ -119,8 +119,10 @@ async function recordPaymentEvent({ paymentId, topic, rawPayload, payment }) {
     if (orderId) {
       const paymentStatus = status || 'updated';
       const orderStatus = status === 'approved' ? 'paid' : status === 'rejected' ? 'payment_rejected' : 'pending_payment';
+      const previousOrder = await client.query('select paid_at from orders where id = $1', [orderId]);
+      const wasAlreadyPaid = Boolean(previousOrder.rows[0]?.paid_at);
 
-      await client.query(
+      const updatedOrder = await client.query(
         `update orders
          set mercado_pago_payment_id = coalesce($2, mercado_pago_payment_id),
              payment_status = $3,
@@ -130,6 +132,17 @@ async function recordPaymentEvent({ paymentId, topic, rawPayload, payment }) {
          where id = $1`,
         [orderId, paymentId ? String(paymentId) : null, paymentStatus, orderStatus]
       );
+
+      if (status === 'approved' && updatedOrder.rowCount > 0 && !wasAlreadyPaid) {
+        await client.query(
+          `update products p
+           set stock_quantity = greatest(0, stock_quantity - oi.quantity),
+               updated_at = now()
+           from order_items oi
+           where oi.order_id = $1 and oi.product_id = p.id`,
+          [orderId]
+        );
+      }
     }
   });
 }

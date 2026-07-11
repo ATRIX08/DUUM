@@ -40,6 +40,7 @@
 
         <label for="cep">CEP</label>
         <input id="cep" inputmode="numeric" maxlength="9" autocomplete="postal-code" required>
+        <small class="field-hint" id="cepHint" aria-live="polite"></small>
 
         <label for="address">Endereco</label>
         <input id="address" maxlength="140" autocomplete="street-address" required>
@@ -187,6 +188,22 @@
         checkoutStatus.className = 'checkout-status failure';
         checkoutButton.disabled = false;
         checkoutButton.textContent = 'Continuar para pagamento seguro';
+      }
+    });
+    document.querySelector('#cep').addEventListener('blur', async event => {
+      const cep = event.target.value.replace(/\D/g, '');
+      const hint = document.querySelector('#cepHint');
+      if (cep.length !== 8) return;
+      hint.textContent = 'Buscando endereco...';
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        if (data.erro) throw new Error('CEP nao encontrado.');
+        document.querySelector('#address').value = [data.logradouro, data.bairro].filter(Boolean).join(' - ');
+        document.querySelector('#city').value = data.localidade || '';
+        hint.textContent = 'Endereco preenchido.';
+      } catch (error) {
+        hint.textContent = error.message || 'Nao foi possivel buscar o CEP.';
       }
     });
     renderSummary();

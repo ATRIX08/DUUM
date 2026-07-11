@@ -74,13 +74,20 @@ async function adminOrders(req, res) {
     if (!targetId) throw new Error('Pedido obrigatorio.');
     if (!allowedStatuses.has(status)) throw new Error('Status invalido.');
 
+    const carrier = cleanText(body.carrier, 80);
+    const trackingCode = cleanText(body.tracking_code, 120);
+    const adminNotes = cleanText(body.admin_notes, 1000);
+
     const result = await query(
       `update orders
        set status = $2,
+           carrier = $3,
+           tracking_code = $4,
+           admin_notes = $5,
            updated_at = now()
        where id = $1
-       returning id, status, updated_at`,
-      [targetId, status]
+       returning id, status, carrier, tracking_code, updated_at`,
+      [targetId, status, carrier, trackingCode, adminNotes]
     );
 
     if (!result.rows.length) return sendJson(res, 404, { error: 'Pedido nao encontrado.' });

@@ -31,12 +31,31 @@
     </section>
 
     <nav class="admin-tabs" aria-label="Areas do painel">
-      <button class="admin-tab active" data-tab="orders">Pedidos</button>
+      <button class="admin-tab active" data-tab="dashboard">Dashboard</button>
+      <button class="admin-tab" data-tab="orders">Pedidos</button>
       <button class="admin-tab" data-tab="products">Produtos</button>
       <button class="admin-tab" data-tab="suppliers">Fornecedores</button>
     </nav>
 
-    <section class="admin-panel active" id="ordersPanel">
+    <section class="admin-panel active" id="dashboardPanel">
+      <div class="admin-panel-head">
+        <h2>Visao geral</h2>
+        <button class="secondary-btn mini" id="refreshDashboard">Atualizar</button>
+      </div>
+      <div class="admin-dashboard" id="dashboardCards"></div>
+      <div class="admin-two-col">
+        <div>
+          <h3>Status dos pedidos</h3>
+          <div class="admin-table" id="statusTable"></div>
+        </div>
+        <div>
+          <h3>Estoque baixo</h3>
+          <div class="admin-table" id="lowStockTable"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-panel" id="ordersPanel">
       <div class="admin-panel-head">
         <h2>Pedidos recentes</h2>
         <button class="secondary-btn mini" id="refreshOrders">Atualizar</button>
@@ -52,15 +71,19 @@
       </div>
       <form class="admin-form" id="productForm">
         <input name="id" type="number" min="1" placeholder="ID" required>
+        <input name="sku" placeholder="SKU interno">
         <input name="name" placeholder="Nome" required>
         <input name="category" placeholder="Categoria">
         <input name="price" type="number" step="0.01" min="0" placeholder="Preco" required>
         <input name="old_price" type="number" step="0.01" min="0" placeholder="Preco antigo">
         <input name="image_url" placeholder="URL da imagem">
         <input name="supplier_id" type="number" min="1" placeholder="ID fornecedor">
+        <input name="supplier_sku" placeholder="SKU fornecedor">
         <input name="supplier_cost" type="number" step="0.01" min="0" placeholder="Custo fornecedor">
+        <input name="stock_quantity" type="number" min="0" step="1" placeholder="Estoque">
         <textarea name="description" placeholder="Descricao"></textarea>
         <label class="checkline"><input name="active" type="checkbox" checked> Produto ativo</label>
+        <label class="checkline"><input name="featured" type="checkbox"> Destaque</label>
         <button class="checkout-btn" type="submit">Salvar produto</button>
       </form>
       <div class="admin-table" id="productsTable"></div>

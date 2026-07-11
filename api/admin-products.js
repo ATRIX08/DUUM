@@ -15,6 +15,7 @@ function normalizeProduct(body) {
 
   return {
     id,
+    sku: cleanText(body.sku, 80),
     name: cleanText(body.name, 160),
     category: cleanText(body.category, 80) || 'geral',
     price,
@@ -24,7 +25,9 @@ function normalizeProduct(body) {
     active: body.active !== false,
     supplier_id: body.supplier_id ? Number(body.supplier_id) : null,
     supplier_sku: cleanText(body.supplier_sku, 120),
-    supplier_cost: body.supplier_cost ? cleanMoney(body.supplier_cost) : null
+    supplier_cost: body.supplier_cost ? cleanMoney(body.supplier_cost) : null,
+    stock_quantity: Number.isInteger(Number(body.stock_quantity)) ? Number(body.stock_quantity) : 0,
+    featured: body.featured === true
   };
 }
 
@@ -49,9 +52,10 @@ async function adminProducts(req, res) {
     const product = normalizeProduct(await readJson(req));
     await query(
       `insert into products
-       (id, name, category, price, old_price, image_url, description, active, supplier_id, supplier_sku, supplier_cost, updated_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now())
+       (id, sku, name, category, price, old_price, image_url, description, active, supplier_id, supplier_sku, supplier_cost, stock_quantity, featured, updated_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,now())
        on conflict (id) do update set
+         sku = excluded.sku,
          name = excluded.name,
          category = excluded.category,
          price = excluded.price,
@@ -62,9 +66,12 @@ async function adminProducts(req, res) {
          supplier_id = excluded.supplier_id,
          supplier_sku = excluded.supplier_sku,
          supplier_cost = excluded.supplier_cost,
+         stock_quantity = excluded.stock_quantity,
+         featured = excluded.featured,
          updated_at = now()`,
       [
         product.id,
+        product.sku,
         product.name,
         product.category,
         product.price,
@@ -74,7 +81,9 @@ async function adminProducts(req, res) {
         product.active,
         product.supplier_id,
         product.supplier_sku,
-        product.supplier_cost
+        product.supplier_cost,
+        product.stock_quantity,
+        product.featured
       ]
     );
 

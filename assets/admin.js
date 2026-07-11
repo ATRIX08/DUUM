@@ -2,6 +2,7 @@
 
 const state = {
   secret: localStorage.getItem('duum_admin_secret') || '',
+  dashboard: null,
   orders: [],
   products: [],
   suppliers: []
@@ -42,6 +43,21 @@ function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+async function loadDashboard() {
+  const data = await api('/api/admin-dashboard');
+  state.dashboard = data;
+  const summary = data.summary || {};
+  qs('#dashboardCards').innerHTML = `
+    <div><strong>${summary.orders || 0}</strong><span>Pedidos totais</span></div>
+    <div><strong>${money(summary.gross_total)}</strong><span>Volume criado</span></div>
+    <div><strong>${summary.paid_orders || 0}</strong><span>Pedidos pagos</span></div>
+    <div><strong>${money(summary.paid_total)}</strong><span>Receita aprovada</span></div>`;
+  qs('#statusTable').innerHTML = `
+    <table><tbody>${(data.byStatus || []).map(row => `<tr><td><span class="pill">${escapeHtml(row.status)}</span></td><td>${row.count}</td></tr>`).join('') || '<tr><td>Nenhum pedido.</td></tr>'}</tbody></table>`;
+  qs('#lowStockTable').innerHTML = `
+    <table><tbody>${(data.lowStock || []).map(product => `<tr><td>${escapeHtml(product.name)}<small>ID ${product.id}</small></td><td>${product.stock_quantity}</td></tr>`).join('') || '<tr><td>Nenhum alerta de estoque.</td></tr>'}</tbody></table>`;
+}
+
 async function loadOrders() {
   const data = await api('/api/admin-orders');
   state.orders = data.orders || [];
@@ -70,11 +86,21 @@ async function openOrder(id) {
       <div><strong>E-mail</strong><span>${escapeHtml(order.customer_email || '-')}</span></div>
       <div><strong>Total</strong><span>${money(order.total_amount)}</span></div>
       <div><strong>Pagamento</strong><span>${escapeHtml(order.payment_status)}</span></div>
+      <div><strong>Transportadora</strong><span>${escapeHtml(order.carrier || '-')}</span></div>
+      <div><strong>Rastreio</strong><span>${escapeHtml(order.tracking_code || '-')}</span></div>
     </div>
-    <label>Status operacional</label>
-    <select id="orderStatus">
-      ${['pending_payment','paid','preparing','shipped','delivered','cancelled','payment_rejected'].map(status => `<option ${status === order.status ? 'selected' : ''}>${status}</option>`).join('')}
-    </select>
+    <div class="admin-order-form">
+      <label>Status operacional</label>
+      <select id="orderStatus">
+        ${['pending_payment','paid','preparing','shipped','delivered','cancelled','payment_rejected'].map(status => `<option ${status === order.status ? 'selected' : ''}>${status}</option>`).join('')}
+      </select>
+      <label>Transportadora</label>
+      <input id="orderCarrier" value="${escapeHtml(order.carrier || '')}" placeholder="Correios, Jadlog, Loggi">
+      <label>Codigo de rastreio</label>
+      <input id="orderTracking" value="${escapeHtml(order.tracking_code || '')}" placeholder="Codigo enviado ao cliente">
+      <label>Notas internas</label>
+      <textarea id="orderNotes" placeholder="Observacoes internas">${escapeHtml(order.admin_notes || '')}</textarea>
+    </div>
     <button class="secondary-btn mini" data-save-order="${escapeHtml(order.id)}">Salvar status</button>
     <h4>Itens</h4>
     ${order.items.map(item => `<p>${escapeHtml(item.product_name)} x ${item.quantity} - ${money(item.total_price)}</p>`).join('')}
@@ -86,7 +112,12 @@ async function saveOrderStatus(id) {
   const status = qs('#orderStatus').value;
   await api(`/api/admin-orders?id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status })
+    body: JSON.stringify({
+      status,
+      carrier: qs('#orderCarrier').value,
+      tracking_code: qs('#orderTracking').value,
+      admin_notes: qs('#orderNotes').value
+    })
   });
   setStatus('Status do pedido salvo.', 'success');
   await loadOrders();
@@ -98,12 +129,13 @@ async function loadProducts() {
   state.products = data.products || [];
   qs('#productsTable').innerHTML = `
     <table>
-      <thead><tr><th>ID</th><th>Produto</th><th>Preco</th><th>Fornecedor</th><th>Ativo</th><th></th></tr></thead>
+      <thead><tr><th>ID</th><th>Produto</th><th>Preco</th><th>Estoque</th><th>Fornecedor</th><th>Ativo</th><th></th></tr></thead>
       <tbody>${state.products.map(product => `
         <tr>
           <td>${product.id}</td>
-          <td>${escapeHtml(product.name)}<small>${escapeHtml(product.category || '')}</small></td>
+          <td>${escapeHtml(product.name)}<small>${escapeHtml(product.sku || product.category || '')}</small></td>
           <td>${money(product.price)}</td>
+          <td>${product.stock_quantity ?? 0}</td>
           <td>${escapeHtml(product.supplier_name || '-')}</td>
           <td>${product.active ? 'Sim' : 'Nao'}</td>
           <td><button data-fill-product="${product.id}">Editar</button></td>
@@ -115,10 +147,11 @@ function fillProduct(id) {
   const product = state.products.find(item => Number(item.id) === Number(id));
   if (!product) return;
   const form = qs('#productForm');
-  ['id','name','category','price','old_price','image_url','supplier_id','supplier_cost','description'].forEach(name => {
+  ['id','sku','name','category','price','old_price','image_url','supplier_id','supplier_sku','supplier_cost','stock_quantity','description'].forEach(name => {
     form.elements[name].value = product[name] ?? '';
   });
   form.elements.active.checked = product.active !== false;
+  form.elements.featured.checked = product.featured === true;
 }
 
 async function saveProduct(event) {
@@ -126,11 +159,14 @@ async function saveProduct(event) {
   const form = event.currentTarget;
   const data = formData(form);
   data.active = form.elements.active.checked;
+  data.featured = form.elements.featured.checked;
   await api('/api/admin-products', { method: 'POST', body: JSON.stringify(data) });
   setStatus('Produto salvo.', 'success');
   form.reset();
   form.elements.active.checked = true;
+  form.elements.featured.checked = false;
   await loadProducts();
+  await loadDashboard();
 }
 
 async function loadSuppliers() {
@@ -175,7 +211,7 @@ async function bootstrap() {
     return;
   }
   setStatus('Carregando painel...');
-  await Promise.all([loadOrders(), loadProducts(), loadSuppliers()]);
+  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers()]);
   setStatus('Painel carregado.', 'success');
 }
 
@@ -207,6 +243,7 @@ qs('#saveSecret').addEventListener('click', () => {
   bootstrap().catch(error => setStatus(error.message, 'failure'));
 });
 qs('#refreshOrders').addEventListener('click', () => loadOrders().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshDashboard').addEventListener('click', () => loadDashboard().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshProducts').addEventListener('click', () => loadProducts().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshSuppliers').addEventListener('click', () => loadSuppliers().catch(error => setStatus(error.message, 'failure')));
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));

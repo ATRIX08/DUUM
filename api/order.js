@@ -15,7 +15,7 @@ async function orderLookup(req, res) {
   if (!id) return sendJson(res, 400, { error: 'Informe o pedido.' });
 
   const result = await query(
-    `select o.id, o.status, o.payment_status, o.total_amount, o.created_at, o.updated_at,
+    `select o.id, o.status, o.payment_status, o.total_amount, o.carrier, o.tracking_code, o.created_at, o.updated_at,
             c.name as customer_name, c.email as customer_email, c.city
      from orders o
      left join customers c on c.id = o.customer_id

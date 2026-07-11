@@ -32,17 +32,20 @@ async function main() {
   try {
     for (const product of products) {
       await pool.query(
-        `insert into products (id, name, category, price, old_price, image_url, description, active)
-         values ($1, $2, $3, $4, $5, $6, $7, true)
+        `insert into products (id, sku, name, category, price, old_price, image_url, description, active, stock_quantity, featured)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10)
          on conflict (id) do update set
+           sku = excluded.sku,
            name = excluded.name,
            category = excluded.category,
            price = excluded.price,
            old_price = excluded.old_price,
            image_url = excluded.image_url,
            description = excluded.description,
+           stock_quantity = excluded.stock_quantity,
+           featured = excluded.featured,
            updated_at = now()`,
-        [product.id, product.name, product.category, product.price, product.old || null, product.image, product.description]
+        [product.id, product.sku, product.name, product.category, product.price, product.old || null, product.image, product.description, product.stock || 0, product.featured === true]
       );
     }
 

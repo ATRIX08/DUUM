@@ -35,9 +35,10 @@ function renderProducts(filter = 'todos') {
       <div class="product-info">
         <h3>${safeText(product.name)}</h3>
         <div class="price">${product.old ? `<span class="old">${money(product.old)}</span>` : ''}<strong>${money(product.price)}</strong></div>
+        <small class="stock-note">${Number(product.stock || 0) > 0 ? `${product.stock} disponiveis` : 'Indisponivel'}</small>
         <div class="product-actions">
           <button data-view="${product.id}">Detalhes</button>
-          <button class="add" data-add="${product.id}">Adicionar</button>
+          <button class="add" data-add="${product.id}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>Adicionar</button>
         </div>
       </div>
     </article>`).join('');
@@ -64,6 +65,11 @@ function saveCart() {
 }
 
 function addToCart(id) {
+  const product = products.find(entry => entry.id === id);
+  if (product && Number(product.stock || 0) <= 0) {
+    alert('Produto indisponivel no momento.');
+    return;
+  }
   const item = cart.find(product => product.id === id);
   if (item) item.qty += 1;
   else cart.push({id, qty:1, size:'M'});
@@ -109,7 +115,7 @@ function closeCart() {
 
 function openProduct(id) {
   const product = products.find(entry => entry.id === id);
-  document.querySelector('#dialogContent').innerHTML = `<div class="dialog-product"><img src="${product.image}" alt="${safeText(product.name)}"><div class="dialog-details"><span class="eyebrow">${safeText(product.tag)}</span><h2>${safeText(product.name)}</h2><h3>${money(product.price)}</h3><p>${safeText(product.description)}</p><p><strong>Escolha o tamanho</strong></p><div class="size-list"><button>P</button><button>M</button><button>G</button><button>GG</button></div><button class="checkout-btn" data-add="${product.id}">Adicionar a sacola</button><small>Prazo e disponibilidade confirmados no checkout.</small></div></div>`;
+  document.querySelector('#dialogContent').innerHTML = `<div class="dialog-product"><img src="${product.image}" alt="${safeText(product.name)}"><div class="dialog-details"><span class="eyebrow">${safeText(product.tag)}</span><h2>${safeText(product.name)}</h2><h3>${money(product.price)}</h3><p>${safeText(product.description)}</p><p><strong>Escolha o tamanho</strong></p><div class="size-list"><button>P</button><button>M</button><button>G</button><button>GG</button></div><button class="checkout-btn" data-add="${product.id}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>${Number(product.stock || 0) > 0 ? 'Adicionar a sacola' : 'Indisponivel'}</button><small>Prazo e disponibilidade confirmados no checkout.</small></div></div>`;
   document.querySelector('#productDialog').showModal();
 }
 

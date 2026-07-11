@@ -12,10 +12,10 @@ async function catalog(req, res) {
   }
 
   const result = await query(
-    `select id, name, category, price, old_price, image_url, description, active
+    `select id, sku, name, category, price, old_price, image_url, description, active, stock_quantity, featured
      from products
      where active = true
-     order by id asc`
+     order by featured desc, id asc`
   );
 
   const products = result.rows.map(product => ({
@@ -26,7 +26,9 @@ async function catalog(req, res) {
     old: product.old_price === null ? null : Number(product.old_price),
     tag: product.old_price ? 'OFERTA' : 'NOVO',
     image: product.image_url,
-    description: product.description || ''
+    description: product.description || '',
+    stock: Number(product.stock_quantity || 0),
+    featured: product.featured === true
   }));
 
   return sendJson(res, 200, { products });
