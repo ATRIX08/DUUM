@@ -35,6 +35,7 @@
       <button class="admin-tab" data-tab="orders">Pedidos</button>
       <button class="admin-tab" data-tab="products">Produtos</button>
       <button class="admin-tab" data-tab="suppliers">Fornecedores</button>
+      <button class="admin-tab" data-tab="leads">Leads</button>
     </nav>
 
     <section class="admin-panel active" id="dashboardPanel">
@@ -104,6 +105,14 @@
         <button class="checkout-btn" type="submit">Salvar fornecedor</button>
       </form>
       <div class="admin-table" id="suppliersTable"></div>
+    </section>
+
+    <section class="admin-panel" id="leadsPanel">
+      <div class="admin-panel-head">
+        <h2>Leads e newsletter</h2>
+        <button class="secondary-btn mini" id="refreshLeads">Atualizar</button>
+      </div>
+      <div class="admin-table" id="leadsTable"></div>
     </section>
   </main>
 </body>

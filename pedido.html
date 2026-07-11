@@ -80,6 +80,7 @@
           <div class="summary-line"><span>Pagamento</span><strong>${order.payment_status}</strong></div>
           <div class="summary-line"><span>Transportadora</span><strong>${order.carrier || '-'}</strong></div>
           <div class="summary-line"><span>Rastreio</span><strong>${order.tracking_code || '-'}</strong></div>
+          ${Number(order.discount_amount || 0) > 0 ? `<div class="summary-line"><span>Cupom ${order.discount_code}</span><strong>- ${money(order.discount_amount)}</strong></div>` : ''}
           <div class="summary-line total-line"><span>Total</span><strong>${money(order.total_amount)}</strong></div>
           ${order.items.map(item => `<div class="summary-line"><span>${item.product_name} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
         `;

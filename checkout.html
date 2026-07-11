@@ -60,6 +60,8 @@
         <select id="shipping">
           <option>Entrega padrao: calculada apos integracao</option>
         </select>
+        <label for="coupon">Cupom</label>
+        <input id="coupon" maxlength="40" placeholder="DUUM10">
         <button class="checkout-btn" type="submit">Continuar para pagamento seguro</button>
       </form>
     </section>
@@ -67,6 +69,7 @@
     <aside class="checkout-box checkout-summary">
       <h2>Resumo</h2>
       <div id="summary"></div>
+      <div class="summary-line" id="discountLine" hidden><span>Desconto</span><span id="discount"></span></div>
       <div class="summary-line"><span>Frete</span><span>A calcular</span></div>
       <div class="summary-line total-line"><strong>Total</strong><strong id="total"></strong></div>
       <p class="summary-note">Os precos sao conferidos novamente no servidor antes de abrir o pagamento.</p>
@@ -97,7 +100,11 @@
         total += product[1] * item.qty;
         return `<div class="summary-line"><span>${product[0]} x ${item.qty}</span><span>${money(product[1] * item.qty)}</span></div>`;
       }).join('') || '<p>Sacola vazia.</p>';
-      document.querySelector('#total').textContent = money(total);
+      const coupon = document.querySelector('#coupon')?.value.trim().toUpperCase();
+      const discount = coupon === 'DUUM10' ? Number((total * 0.1).toFixed(2)) : 0;
+      document.querySelector('#discountLine').hidden = discount <= 0;
+      document.querySelector('#discount').textContent = discount > 0 ? `- ${money(discount)}` : '';
+      document.querySelector('#total').textContent = money(total - discount);
     }
 
     async function loadCatalog() {
@@ -152,6 +159,7 @@
         number: document.querySelector('#number').value,
         city: document.querySelector('#city').value
       };
+      const coupon = document.querySelector('#coupon').value.trim();
 
       checkoutButton.disabled = true;
       checkoutButton.textContent = 'Abrindo Mercado Pago...';
@@ -162,7 +170,7 @@
         const response = await fetch('/api/create-preference', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ cart, customer })
+          body: JSON.stringify({ cart, customer, coupon })
         });
         const responseText = await response.text();
         let data = {};
@@ -190,6 +198,7 @@
         checkoutButton.textContent = 'Continuar para pagamento seguro';
       }
     });
+    document.querySelector('#coupon').addEventListener('input', renderSummary);
     document.querySelector('#cep').addEventListener('blur', async event => {
       const cep = event.target.value.replace(/\D/g, '');
       const hint = document.querySelector('#cepHint');

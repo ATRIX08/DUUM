@@ -146,11 +146,28 @@ document.querySelector('#checkoutBtn').addEventListener('click', () => {
   window.location.href = 'checkout.html';
 });
 
-document.querySelector('#newsletterForm').addEventListener('submit', event => {
+document.querySelector('#newsletterForm').addEventListener('submit', async event => {
   event.preventDefault();
   const email = document.querySelector('#newsletterEmail').value.trim();
-  document.querySelector('#newsletterMessage').textContent = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Cadastro realizado! Use o cupom DUUM10.' : 'Digite um e-mail valido.';
-  if (email) event.target.reset();
+  const message = document.querySelector('#newsletterMessage');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    message.textContent = 'Digite um e-mail valido.';
+    return;
+  }
+  message.textContent = 'Salvando cadastro...';
+  try {
+    const response = await fetch('/api/newsletter', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, source: 'home' })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Nao foi possivel cadastrar.');
+    message.textContent = `Cadastro realizado! Use o cupom ${data.coupon || 'DUUM10'}.`;
+    event.target.reset();
+  } catch (error) {
+    message.textContent = error.message;
+  }
 });
 
 const cookieBanner = document.querySelector('#cookieBanner');

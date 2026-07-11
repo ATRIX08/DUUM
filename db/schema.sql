@@ -74,6 +74,14 @@ create table if not exists payment_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists newsletter_subscribers (
+  id bigserial primary key,
+  email text not null unique,
+  source text,
+  coupon_code text,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_orders_created_at on orders(created_at desc);
 create index if not exists idx_orders_payment_status on orders(payment_status);
 create index if not exists idx_payment_events_provider_payment_id on payment_events(provider_payment_id);
@@ -86,7 +94,10 @@ alter table orders add column if not exists shipping_method text;
 alter table orders add column if not exists carrier text;
 alter table orders add column if not exists tracking_code text;
 alter table orders add column if not exists admin_notes text;
+alter table orders add column if not exists discount_code text;
+alter table orders add column if not exists discount_amount numeric(10,2) not null default 0;
 
 create index if not exists idx_products_active on products(active);
 create index if not exists idx_products_stock_quantity on products(stock_quantity);
 create index if not exists idx_orders_status on orders(status);
+create index if not exists idx_newsletter_created_at on newsletter_subscribers(created_at desc);

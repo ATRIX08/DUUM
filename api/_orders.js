@@ -23,8 +23,25 @@ function calculateTotal(items) {
   return Number(items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0).toFixed(2));
 }
 
-async function createPendingOrder({ orderId, cart, customer }) {
-  const items = normalizeCart(cart);
+function applyCoupon(items, coupon) {
+  const code = cleanText(coupon, 40).toUpperCase();
+  if (!code) return { items, code: null, discountAmount: 0 };
+  if (code !== 'DUUM10') throw new Error('Cupom invalido.');
+
+  const discountedItems = items.map(item => ({
+    ...item,
+    unit_price: Number((item.unit_price * 0.9).toFixed(2))
+  }));
+  return {
+    items: discountedItems,
+    code,
+    discountAmount: Number((calculateTotal(items) - calculateTotal(discountedItems)).toFixed(2))
+  };
+}
+
+async function createPendingOrder({ orderId, cart, customer, coupon }) {
+  const couponResult = applyCoupon(normalizeCart(cart), coupon);
+  const items = couponResult.items;
   const normalizedCustomer = normalizeCustomer(customer);
   const total = calculateTotal(items);
 
@@ -51,15 +68,17 @@ async function createPendingOrder({ orderId, cart, customer }) {
     const customerId = customerResult.rows[0].id;
 
     await client.query(
-      `insert into orders (id, customer_id, status, payment_status, total_amount, currency)
-       values ($1, $2, 'pending_payment', 'pending', $3, 'BRL')
+      `insert into orders (id, customer_id, status, payment_status, total_amount, currency, discount_code, discount_amount)
+       values ($1, $2, 'pending_payment', 'pending', $3, 'BRL', $4, $5)
        on conflict (id) do update set
          customer_id = excluded.customer_id,
          status = excluded.status,
          payment_status = excluded.payment_status,
          total_amount = excluded.total_amount,
+         discount_code = excluded.discount_code,
+         discount_amount = excluded.discount_amount,
          updated_at = now()`,
-      [orderId, customerId, total]
+      [orderId, customerId, total, couponResult.code, couponResult.discountAmount]
     );
 
     await client.query('delete from order_items where order_id = $1', [orderId]);
@@ -80,7 +99,7 @@ async function createPendingOrder({ orderId, cart, customer }) {
     }
   });
 
-  return { orderId, items, total, saved: true };
+  return { orderId, items, total, discountCode: couponResult.code, discountAmount: couponResult.discountAmount, saved: true };
 }
 
 async function attachPreference(orderId, preferenceId, paymentUrl) {

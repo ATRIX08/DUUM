@@ -43,7 +43,7 @@ async function createPreference(req, res) {
     const customer = body.customer || {};
     const baseUrl = getBaseUrl(req);
     const orderId = `DUUM-${Date.now()}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
-    const order = await createPendingOrder({ orderId, cart: body.cart, customer });
+    const order = await createPendingOrder({ orderId, cart: body.cart, customer, coupon: body.coupon });
 
     const preference = {
       items: order.items,
@@ -106,6 +106,8 @@ async function createPreference(req, res) {
     return sendJson(res, 200, {
       id: mpPayload.id,
       orderId,
+      discount_code: order.discountCode,
+      discount_amount: order.discountAmount,
       payment_url: paymentUrl,
       init_point: mpPayload.init_point,
       sandbox_init_point: mpPayload.sandbox_init_point

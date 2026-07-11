@@ -3,6 +3,7 @@
 const state = {
   secret: localStorage.getItem('duum_admin_secret') || '',
   dashboard: null,
+  leads: [],
   orders: [],
   products: [],
   suppliers: []
@@ -85,6 +86,7 @@ async function openOrder(id) {
       <div><strong>Cliente</strong><span>${escapeHtml(order.customer_name || '-')}</span></div>
       <div><strong>E-mail</strong><span>${escapeHtml(order.customer_email || '-')}</span></div>
       <div><strong>Total</strong><span>${money(order.total_amount)}</span></div>
+      <div><strong>Desconto</strong><span>${order.discount_code ? `${escapeHtml(order.discount_code)} - ${money(order.discount_amount)}` : '-'}</span></div>
       <div><strong>Pagamento</strong><span>${escapeHtml(order.payment_status)}</span></div>
       <div><strong>Transportadora</strong><span>${escapeHtml(order.carrier || '-')}</span></div>
       <div><strong>Rastreio</strong><span>${escapeHtml(order.tracking_code || '-')}</span></div>
@@ -186,6 +188,22 @@ async function loadSuppliers() {
     </table>`;
 }
 
+async function loadLeads() {
+  const data = await api('/api/admin-leads');
+  state.leads = data.leads || [];
+  qs('#leadsTable').innerHTML = `
+    <table>
+      <thead><tr><th>E-mail</th><th>Origem</th><th>Cupom</th><th>Cadastro</th></tr></thead>
+      <tbody>${state.leads.map(lead => `
+        <tr>
+          <td>${escapeHtml(lead.email)}</td>
+          <td>${escapeHtml(lead.source || '-')}</td>
+          <td><span class="pill">${escapeHtml(lead.coupon_code || '-')}</span></td>
+          <td>${dateTime(lead.created_at)}</td>
+        </tr>`).join('') || '<tr><td colspan="4">Nenhum lead ainda.</td></tr>'}</tbody>
+    </table>`;
+}
+
 function fillSupplier(id) {
   const supplier = state.suppliers.find(item => Number(item.id) === Number(id));
   if (!supplier) return;
@@ -211,7 +229,7 @@ async function bootstrap() {
     return;
   }
   setStatus('Carregando painel...');
-  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers()]);
+  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers(), loadLeads()]);
   setStatus('Painel carregado.', 'success');
 }
 
@@ -246,6 +264,7 @@ qs('#refreshOrders').addEventListener('click', () => loadOrders().catch(error =>
 qs('#refreshDashboard').addEventListener('click', () => loadDashboard().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshProducts').addEventListener('click', () => loadProducts().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshSuppliers').addEventListener('click', () => loadSuppliers().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshLeads').addEventListener('click', () => loadLeads().catch(error => setStatus(error.message, 'failure')));
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));
 qs('#supplierForm').addEventListener('submit', event => saveSupplier(event).catch(error => setStatus(error.message, 'failure')));
 

@@ -40,7 +40,7 @@ async function getOrder(orderId) {
 
 async function listOrders(res) {
   const result = await query(
-    `select o.id, o.status, o.payment_status, o.total_amount, o.created_at, o.updated_at,
+    `select o.id, o.status, o.payment_status, o.total_amount, o.discount_code, o.discount_amount, o.created_at, o.updated_at,
             c.name as customer_name, c.email as customer_email, count(oi.id)::int as item_count
      from orders o
      left join customers c on c.id = o.customer_id
