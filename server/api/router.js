@@ -1,6 +1,8 @@
 'use strict';
 
 const adminDashboard = require('./admin-dashboard');
+const adminCoupons = require('./admin-coupons');
+const adminCustomers = require('./admin-customers');
 const adminLeads = require('./admin-leads');
 const adminMigrate = require('./admin-migrate');
 const adminOrders = require('./admin-orders');
@@ -23,6 +25,8 @@ function routeApi(req, res) {
   if (pathname === '/api/newsletter') return newsletter(req, res);
   if (pathname === '/api/auth') return auth(req, res);
   if (pathname === '/api/admin-dashboard') return adminDashboard(req, res);
+  if (pathname === '/api/admin-coupons') return adminCoupons(req, res);
+  if (pathname === '/api/admin-customers') return adminCustomers(req, res);
   if (pathname === '/api/admin-leads') return adminLeads(req, res);
   if (pathname === '/api/admin-migrate') return adminMigrate(req, res);
   if (pathname === '/api/admin-orders') return adminOrders(req, res);

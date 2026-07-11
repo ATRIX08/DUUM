@@ -2,6 +2,8 @@
 
 const state = {
   secret: localStorage.getItem('duum_admin_secret') || '',
+  coupons: [],
+  customers: [],
   dashboard: null,
   leads: [],
   orders: [],
@@ -131,16 +133,20 @@ async function loadProducts() {
   state.products = data.products || [];
   qs('#productsTable').innerHTML = `
     <table>
-      <thead><tr><th>ID</th><th>Produto</th><th>Preco</th><th>Estoque</th><th>Fornecedor</th><th>Ativo</th><th></th></tr></thead>
+      <thead><tr><th>ID</th><th>Produto</th><th>Preco</th><th>Estoque</th><th>Fornecedor</th><th>Ativo</th><th>Acoes</th></tr></thead>
       <tbody>${state.products.map(product => `
         <tr>
           <td>${product.id}</td>
           <td>${escapeHtml(product.name)}<small>${escapeHtml(product.sku || product.category || '')}</small></td>
-          <td>${money(product.price)}</td>
+          <td>${money(product.price)}${product.old_price ? `<small>De ${money(product.old_price)}</small>` : ''}</td>
           <td>${product.stock_quantity ?? 0}</td>
           <td>${escapeHtml(product.supplier_name || '-')}</td>
           <td>${product.active ? 'Sim' : 'Nao'}</td>
-          <td><button data-fill-product="${product.id}">Editar</button></td>
+          <td class="action-row">
+            <button data-fill-product="${product.id}">Editar</button>
+            <button data-promo-product="${product.id}">Promo 10%</button>
+            <button data-toggle-product="${product.id}">${product.active ? 'Desativar' : 'Ativar'}</button>
+          </td>
         </tr>`).join('')}</tbody>
     </table>`;
 }
@@ -169,6 +175,36 @@ async function saveProduct(event) {
   form.elements.featured.checked = false;
   await loadProducts();
   await loadDashboard();
+}
+
+async function saveProductPayload(product) {
+  await api('/api/admin-products', { method: 'POST', body: JSON.stringify(product) });
+  await loadProducts();
+  await loadDashboard();
+}
+
+async function promoProduct(id) {
+  const product = state.products.find(item => Number(item.id) === Number(id));
+  if (!product) return;
+  await saveProductPayload({
+    ...product,
+    old_price: product.old_price || product.price,
+    price: Number((Number(product.price) * 0.9).toFixed(2)),
+    active: product.active !== false,
+    featured: product.featured === true
+  });
+  setStatus('Promocao aplicada ao produto.', 'success');
+}
+
+async function toggleProduct(id) {
+  const product = state.products.find(item => Number(item.id) === Number(id));
+  if (!product) return;
+  await saveProductPayload({
+    ...product,
+    active: product.active === false,
+    featured: product.featured === true
+  });
+  setStatus(product.active === false ? 'Produto ativado.' : 'Produto desativado.', 'success');
 }
 
 async function loadSuppliers() {
@@ -204,6 +240,67 @@ async function loadLeads() {
     </table>`;
 }
 
+async function loadCoupons() {
+  const data = await api('/api/admin-coupons');
+  state.coupons = data.coupons || [];
+  qs('#couponsTable').innerHTML = `
+    <table>
+      <thead><tr><th>Cupom</th><th>Tipo</th><th>Valor</th><th>Minimo</th><th>Uso</th><th>Validade</th><th></th></tr></thead>
+      <tbody>${state.coupons.map(coupon => `
+        <tr>
+          <td>${escapeHtml(coupon.code)}<small>${coupon.active ? 'Ativo' : 'Inativo'}</small></td>
+          <td>${coupon.type === 'fixed' ? 'Valor fixo' : 'Porcentagem'}</td>
+          <td>${coupon.type === 'fixed' ? money(coupon.value) : `${Number(coupon.value)}%`}</td>
+          <td>${money(coupon.min_order_amount)}</td>
+          <td>${coupon.used_count || 0}${coupon.max_uses ? ` / ${coupon.max_uses}` : ''}</td>
+          <td>${coupon.expires_at ? dateTime(coupon.expires_at) : 'Sem vencimento'}</td>
+          <td><button data-fill-coupon="${escapeHtml(coupon.code)}">Editar</button></td>
+        </tr>`).join('') || '<tr><td colspan="7">Nenhum cupom cadastrado.</td></tr>'}</tbody>
+    </table>`;
+}
+
+function fillCoupon(code) {
+  const coupon = state.coupons.find(item => item.code === code);
+  if (!coupon) return;
+  const form = qs('#couponForm');
+  ['code','type','value','min_order_amount','max_uses'].forEach(name => {
+    form.elements[name].value = coupon[name] ?? '';
+  });
+  form.elements.starts_at.value = coupon.starts_at ? coupon.starts_at.slice(0, 16) : '';
+  form.elements.expires_at.value = coupon.expires_at ? coupon.expires_at.slice(0, 16) : '';
+  form.elements.active.checked = coupon.active !== false;
+}
+
+async function saveCoupon(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = formData(form);
+  data.active = form.elements.active.checked;
+  await api('/api/admin-coupons', { method: 'POST', body: JSON.stringify(data) });
+  setStatus('Cupom salvo.', 'success');
+  form.reset();
+  form.elements.active.checked = true;
+  await loadCoupons();
+}
+
+async function loadCustomers() {
+  const data = await api('/api/admin-customers');
+  state.customers = data.customers || [];
+  qs('#customersTable').innerHTML = `
+    <table>
+      <thead><tr><th>Cliente</th><th>Contato</th><th>Conta</th><th>Pedidos</th><th>Total</th><th>Cadastro</th></tr></thead>
+      <tbody>${state.customers.map(customer => `
+        <tr>
+          <td>${escapeHtml(customer.name || '-')}<small>ID ${customer.id}</small></td>
+          <td>${escapeHtml(customer.email || '-')}<small>${escapeHtml(customer.phone || customer.city || '')}</small></td>
+          <td>${customer.has_account ? 'Sim' : 'Nao'}</td>
+          <td>${customer.order_count || 0}</td>
+          <td>${money(customer.total_spent)}</td>
+          <td>${dateTime(customer.created_at)}</td>
+        </tr>`).join('') || '<tr><td colspan="6">Nenhum cliente ainda.</td></tr>'}</tbody>
+    </table>`;
+}
+
 function fillSupplier(id) {
   const supplier = state.suppliers.find(item => Number(item.id) === Number(id));
   if (!supplier) return;
@@ -229,7 +326,7 @@ async function bootstrap() {
     return;
   }
   setStatus('Carregando painel...');
-  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers(), loadLeads()]);
+  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers(), loadCoupons(), loadCustomers(), loadLeads()]);
   setStatus('Painel carregado.', 'success');
 }
 
@@ -251,8 +348,17 @@ document.addEventListener('click', async event => {
   const fillProductButton = event.target.closest('[data-fill-product]');
   if (fillProductButton) fillProduct(fillProductButton.dataset.fillProduct);
 
+  const promoProductButton = event.target.closest('[data-promo-product]');
+  if (promoProductButton) promoProduct(promoProductButton.dataset.promoProduct).catch(error => setStatus(error.message, 'failure'));
+
+  const toggleProductButton = event.target.closest('[data-toggle-product]');
+  if (toggleProductButton) toggleProduct(toggleProductButton.dataset.toggleProduct).catch(error => setStatus(error.message, 'failure'));
+
   const fillSupplierButton = event.target.closest('[data-fill-supplier]');
   if (fillSupplierButton) fillSupplier(fillSupplierButton.dataset.fillSupplier);
+
+  const fillCouponButton = event.target.closest('[data-fill-coupon]');
+  if (fillCouponButton) fillCoupon(fillCouponButton.dataset.fillCoupon);
 });
 
 qs('#saveSecret').addEventListener('click', () => {
@@ -264,8 +370,11 @@ qs('#refreshOrders').addEventListener('click', () => loadOrders().catch(error =>
 qs('#refreshDashboard').addEventListener('click', () => loadDashboard().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshProducts').addEventListener('click', () => loadProducts().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshSuppliers').addEventListener('click', () => loadSuppliers().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshCoupons').addEventListener('click', () => loadCoupons().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshCustomers').addEventListener('click', () => loadCustomers().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshLeads').addEventListener('click', () => loadLeads().catch(error => setStatus(error.message, 'failure')));
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));
 qs('#supplierForm').addEventListener('submit', event => saveSupplier(event).catch(error => setStatus(error.message, 'failure')));
+qs('#couponForm').addEventListener('submit', event => saveCoupon(event).catch(error => setStatus(error.message, 'failure')));
 
 bootstrap().catch(error => setStatus(error.message, 'failure'));

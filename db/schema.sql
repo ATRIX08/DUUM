@@ -92,6 +92,21 @@ create table if not exists newsletter_subscribers (
   created_at timestamptz not null default now()
 );
 
+create table if not exists coupons (
+  id bigserial primary key,
+  code text not null unique,
+  type text not null default 'percent',
+  value numeric(10,2) not null,
+  min_order_amount numeric(10,2) not null default 0,
+  max_uses integer,
+  used_count integer not null default 0,
+  active boolean not null default true,
+  starts_at timestamptz,
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_orders_created_at on orders(created_at desc);
 create index if not exists idx_orders_payment_status on orders(payment_status);
 create index if not exists idx_payment_events_provider_payment_id on payment_events(provider_payment_id);
@@ -112,3 +127,8 @@ create index if not exists idx_products_stock_quantity on products(stock_quantit
 create index if not exists idx_orders_status on orders(status);
 create index if not exists idx_newsletter_created_at on newsletter_subscribers(created_at desc);
 create index if not exists idx_customer_accounts_customer_id on customer_accounts(customer_id);
+create index if not exists idx_coupons_active on coupons(active);
+
+insert into coupons (code, type, value, min_order_amount, active)
+values ('DUUM10', 'percent', 10, 0, true)
+on conflict (code) do nothing;

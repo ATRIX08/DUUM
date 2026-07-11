@@ -23,24 +23,51 @@ function calculateTotal(items) {
   return Number(items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0).toFixed(2));
 }
 
-function applyCoupon(items, coupon) {
+async function applyCoupon(items, coupon) {
   const code = cleanText(coupon, 40).toUpperCase();
   if (!code) return { items, code: null, discountAmount: 0 };
-  if (code !== 'DUUM10') throw new Error('Cupom invalido.');
+
+  const subtotal = calculateTotal(items);
+  let couponRow = null;
+
+  if (hasDatabase()) {
+    const result = await query(
+      `select *
+       from coupons
+       where code = $1
+         and active = true
+         and (starts_at is null or starts_at <= now())
+         and (expires_at is null or expires_at >= now())
+         and (max_uses is null or used_count < max_uses)`,
+      [code]
+    );
+    couponRow = result.rows[0] || null;
+  } else if (code === 'DUUM10') {
+    couponRow = { code: 'DUUM10', type: 'percent', value: 10, min_order_amount: 0 };
+  }
+
+  if (!couponRow) throw new Error('Cupom invalido.');
+  if (subtotal < Number(couponRow.min_order_amount || 0)) throw new Error('Pedido abaixo do minimo para este cupom.');
+
+  const discountAmount = couponRow.type === 'fixed'
+    ? Math.min(Number(couponRow.value), subtotal)
+    : Number((subtotal * (Number(couponRow.value) / 100)).toFixed(2));
+  const discountRatio = discountAmount / subtotal;
 
   const discountedItems = items.map(item => ({
     ...item,
-    unit_price: Number((item.unit_price * 0.9).toFixed(2))
+    unit_price: Number(Math.max(0.01, item.unit_price * (1 - discountRatio)).toFixed(2))
   }));
+
   return {
     items: discountedItems,
     code,
-    discountAmount: Number((calculateTotal(items) - calculateTotal(discountedItems)).toFixed(2))
+    discountAmount: Number((subtotal - calculateTotal(discountedItems)).toFixed(2))
   };
 }
 
 async function createPendingOrder({ orderId, cart, customer, coupon }) {
-  const couponResult = applyCoupon(normalizeCart(cart), coupon);
+  const couponResult = await applyCoupon(normalizeCart(cart), coupon);
   const items = couponResult.items;
   const normalizedCustomer = normalizeCustomer(customer);
   const total = calculateTotal(items);
@@ -80,6 +107,16 @@ async function createPendingOrder({ orderId, cart, customer, coupon }) {
          updated_at = now()`,
       [orderId, customerId, total, couponResult.code, couponResult.discountAmount]
     );
+
+    if (couponResult.code) {
+      await client.query(
+        `update coupons
+         set used_count = used_count + 1,
+             updated_at = now()
+         where code = $1`,
+        [couponResult.code]
+      );
+    }
 
     await client.query('delete from order_items where order_id = $1', [orderId]);
 

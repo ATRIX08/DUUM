@@ -201,6 +201,8 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .admin-table th,.admin-table td{padding:13px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
 .admin-table th{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#667085;background:#f8fafc}
 .admin-table small,.admin-grid span{display:block;color:var(--muted);margin-top:5px;line-height:1.4}
+.action-row{display:flex;gap:6px;flex-wrap:wrap;min-width:220px}
+.action-row button{padding:8px 10px;font-size:12px}
 .pill{display:inline-flex;background:#eef4f5;border:1px solid #d8e6e8;padding:5px 8px;border-radius:999px;font-size:12px;font-weight:800}
 .admin-detail{margin-top:20px;padding:18px;border:1px solid var(--line);background:#fbfaf8}
 .admin-detail:empty{display:none}

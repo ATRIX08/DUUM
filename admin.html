@@ -35,6 +35,8 @@
       <button class="admin-tab" data-tab="orders">Pedidos</button>
       <button class="admin-tab" data-tab="products">Produtos</button>
       <button class="admin-tab" data-tab="suppliers">Fornecedores</button>
+      <button class="admin-tab" data-tab="coupons">Cupons</button>
+      <button class="admin-tab" data-tab="customers">Clientes</button>
       <button class="admin-tab" data-tab="leads">Leads</button>
     </nav>
 
@@ -105,6 +107,36 @@
         <button class="checkout-btn" type="submit">Salvar fornecedor</button>
       </form>
       <div class="admin-table" id="suppliersTable"></div>
+    </section>
+
+    <section class="admin-panel" id="couponsPanel">
+      <div class="admin-panel-head">
+        <h2>Cupons e promocoes</h2>
+        <button class="secondary-btn mini" id="refreshCoupons">Atualizar</button>
+      </div>
+      <form class="admin-form" id="couponForm">
+        <input name="code" placeholder="Codigo do cupom" required>
+        <select name="type">
+          <option value="percent">Porcentagem</option>
+          <option value="fixed">Valor fixo</option>
+        </select>
+        <input name="value" type="number" min="0" step="0.01" placeholder="Desconto" required>
+        <input name="min_order_amount" type="number" min="0" step="0.01" placeholder="Pedido minimo">
+        <input name="max_uses" type="number" min="1" step="1" placeholder="Limite de usos">
+        <input name="starts_at" type="datetime-local">
+        <input name="expires_at" type="datetime-local">
+        <label class="checkline"><input name="active" type="checkbox" checked> Cupom ativo</label>
+        <button class="checkout-btn" type="submit">Salvar cupom</button>
+      </form>
+      <div class="admin-table" id="couponsTable"></div>
+    </section>
+
+    <section class="admin-panel" id="customersPanel">
+      <div class="admin-panel-head">
+        <h2>Clientes</h2>
+        <button class="secondary-btn mini" id="refreshCustomers">Atualizar</button>
+      </div>
+      <div class="admin-table" id="customersTable"></div>
     </section>
 
     <section class="admin-panel" id="leadsPanel">
