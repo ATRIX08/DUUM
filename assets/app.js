@@ -16,10 +16,12 @@ if (legacyCart && !localStorage.getItem('duum_cart')) localStorage.setItem('duum
 
 const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 let cart = JSON.parse(localStorage.getItem('duum_cart') || '[]');
+let account = JSON.parse(localStorage.getItem('duum_account') || 'null');
 
 const grid = document.querySelector('#productGrid');
 const cartDrawer = document.querySelector('#cartDrawer');
 const overlay = document.querySelector('#overlay');
+const accountDialog = document.querySelector('#accountDialog');
 
 function safeText(text) {
   const el = document.createElement('span');
@@ -113,6 +115,57 @@ function closeCart() {
   overlay.classList.remove('open');
 }
 
+function updateAccountUi() {
+  const button = document.querySelector('#accountBtn');
+  button.textContent = account?.name ? account.name.split(' ')[0] : 'Entrar';
+  document.querySelector('#logoutBtn').hidden = !account;
+}
+
+function setAuthMode(mode) {
+  document.querySelector('#authMode').value = mode;
+  document.querySelector('#accountTitle').textContent = mode === 'register' ? 'Criar conta' : 'Entrar';
+  document.querySelector('#authForm button[type="submit"]').textContent = mode === 'register' ? 'Criar conta' : 'Entrar';
+  document.querySelector('#toggleAuth').textContent = mode === 'register' ? 'Ja tenho conta' : 'Criar conta';
+  document.querySelectorAll('.register-only').forEach(element => {
+    element.style.display = mode === 'register' ? '' : 'none';
+  });
+  document.querySelector('#authPassword').setAttribute('autocomplete', mode === 'register' ? 'new-password' : 'current-password');
+  document.querySelector('#authStatus').textContent = '';
+}
+
+async function submitAuth(event) {
+  event.preventDefault();
+  const mode = document.querySelector('#authMode').value;
+  const status = document.querySelector('#authStatus');
+  status.textContent = mode === 'register' ? 'Criando conta...' : 'Entrando...';
+  status.className = 'checkout-status';
+
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: mode,
+        name: document.querySelector('#authName').value,
+        phone: document.querySelector('#authPhone').value,
+        email: document.querySelector('#authEmail').value,
+        password: document.querySelector('#authPassword').value
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Nao foi possivel autenticar.');
+    account = data.user;
+    localStorage.setItem('duum_account', JSON.stringify(account));
+    status.textContent = 'Conta conectada.';
+    status.className = 'checkout-status success';
+    updateAccountUi();
+    setTimeout(() => accountDialog.close(), 450);
+  } catch (error) {
+    status.textContent = error.message;
+    status.className = 'checkout-status failure';
+  }
+}
+
 function openProduct(id) {
   const product = products.find(entry => entry.id === id);
   document.querySelector('#dialogContent').innerHTML = `<div class="dialog-product"><img src="${product.image}" alt="${safeText(product.name)}"><div class="dialog-details"><span class="eyebrow">${safeText(product.tag)}</span><h2>${safeText(product.name)}</h2><h3>${money(product.price)}</h3><p>${safeText(product.description)}</p><p><strong>Escolha o tamanho</strong></p><div class="size-list"><button>P</button><button>M</button><button>G</button><button>GG</button></div><button class="checkout-btn" data-add="${product.id}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>${Number(product.stock || 0) > 0 ? 'Adicionar a sacola' : 'Indisponivel'}</button><small>Prazo e disponibilidade confirmados no checkout.</small></div></div>`;
@@ -137,9 +190,28 @@ document.querySelectorAll('.filter').forEach(button => button.addEventListener('
 }));
 
 document.querySelector('#cartBtn').addEventListener('click', openCart);
+document.querySelector('#accountBtn').addEventListener('click', () => {
+  setAuthMode(account ? 'login' : 'login');
+  if (account) {
+    document.querySelector('#authEmail').value = account.email || '';
+    document.querySelector('#authStatus').textContent = `Voce esta conectado como ${account.email}.`;
+  }
+  accountDialog.showModal();
+});
 document.querySelector('#closeCart').addEventListener('click', closeCart);
 overlay.addEventListener('click', closeCart);
 document.querySelector('#closeDialog').addEventListener('click', () => document.querySelector('#productDialog').close());
+document.querySelector('#closeAccount').addEventListener('click', () => accountDialog.close());
+document.querySelector('#toggleAuth').addEventListener('click', () => {
+  setAuthMode(document.querySelector('#authMode').value === 'register' ? 'login' : 'register');
+});
+document.querySelector('#logoutBtn').addEventListener('click', () => {
+  account = null;
+  localStorage.removeItem('duum_account');
+  updateAccountUi();
+  document.querySelector('#authStatus').textContent = 'Voce saiu da conta.';
+});
+document.querySelector('#authForm').addEventListener('submit', submitAuth);
 document.querySelector('#menuBtn').addEventListener('click', () => document.querySelector('#nav').classList.toggle('open'));
 document.querySelector('#checkoutBtn').addEventListener('click', () => {
   if (!cart.length) return alert('Sua sacola esta vazia.');
@@ -179,4 +251,6 @@ if (!localStorage.getItem('cookie_choice')) cookieBanner.classList.add('show');
 
 renderProducts();
 renderCart();
+setAuthMode('login');
+updateAccountUi();
 loadCatalog();

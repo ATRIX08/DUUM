@@ -10,6 +10,16 @@ create table if not exists customers (
   created_at timestamptz not null default now()
 );
 
+create table if not exists customer_accounts (
+  id bigserial primary key,
+  customer_id bigint not null references customers(id) on delete cascade,
+  email text not null unique,
+  password_hash text not null,
+  password_salt text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists suppliers (
   id bigserial primary key,
   name text not null,
@@ -101,3 +111,4 @@ create index if not exists idx_products_active on products(active);
 create index if not exists idx_products_stock_quantity on products(stock_quantity);
 create index if not exists idx_orders_status on orders(status);
 create index if not exists idx_newsletter_created_at on newsletter_subscribers(created_at desc);
+create index if not exists idx_customer_accounts_customer_id on customer_accounts(customer_id);

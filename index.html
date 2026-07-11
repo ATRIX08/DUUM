@@ -26,6 +26,7 @@
     </nav>
     <div class="header-actions">
       <button class="icon-btn" id="searchBtn" aria-label="Pesquisar">Buscar</button>
+      <button class="icon-btn" id="accountBtn" aria-label="Entrar ou criar conta">Entrar</button>
       <button class="cart-btn" id="cartBtn" aria-label="Abrir carrinho">Sacola <span id="cartCount">0</span></button>
     </div>
   </header>
@@ -135,6 +136,32 @@
   <dialog id="productDialog">
     <button class="dialog-close" id="closeDialog" aria-label="Fechar">Fechar</button>
     <div id="dialogContent"></div>
+  </dialog>
+
+  <dialog id="accountDialog">
+    <button class="dialog-close" id="closeAccount" aria-label="Fechar">Fechar</button>
+    <div class="account-dialog">
+      <div>
+        <span class="eyebrow">MINHA CONTA</span>
+        <h2 id="accountTitle">Entrar</h2>
+        <p>Use sua conta para acelerar o checkout e acompanhar seus dados na DUUM.</p>
+      </div>
+      <form id="authForm">
+        <input type="hidden" id="authMode" value="login">
+        <label for="authName" class="register-only">Nome completo</label>
+        <input id="authName" class="register-only" maxlength="100" autocomplete="name">
+        <label for="authPhone" class="register-only">Telefone</label>
+        <input id="authPhone" class="register-only" maxlength="30" autocomplete="tel">
+        <label for="authEmail">E-mail</label>
+        <input id="authEmail" type="email" maxlength="160" autocomplete="email" required>
+        <label for="authPassword">Senha</label>
+        <input id="authPassword" type="password" minlength="6" autocomplete="current-password" required>
+        <button class="checkout-btn" type="submit">Entrar</button>
+      </form>
+      <p class="checkout-status" id="authStatus" aria-live="polite"></p>
+      <button class="link-button" id="toggleAuth">Criar conta</button>
+      <button class="link-button" id="logoutBtn" hidden>Sair da conta</button>
+    </div>
   </dialog>
 
   <div class="cookie-banner" id="cookieBanner">

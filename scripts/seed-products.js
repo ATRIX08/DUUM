@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
-const { products } = require('../api/_catalog');
-const { getDatabaseUrl } = require('../api/_db');
+const { products } = require('../server/api/_catalog');
+const { getDatabaseUrl } = require('../server/api/_db');
 
 function loadEnv() {
   const envPath = path.resolve(__dirname, '..', '.env');

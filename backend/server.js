@@ -4,17 +4,8 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 
-const createPreference = require('../api/create-preference');
-const mercadopagoWebhook = require('../api/mercadopago-webhook');
-const adminOrders = require('../api/admin-orders');
-const adminDashboard = require('../api/admin-dashboard');
-const adminLeads = require('../api/admin-leads');
-const adminProducts = require('../api/admin-products');
-const adminSuppliers = require('../api/admin-suppliers');
-const catalog = require('../api/catalog');
-const newsletter = require('../api/newsletter');
-const orderLookup = require('../api/order');
-const { sendJson } = require('../api/_http');
+const routeApi = require('../server/api/router');
+const { sendJson } = require('../server/api/_http');
 
 const rootDir = path.resolve(__dirname, '..');
 const envPath = path.join(rootDir, '.env');
@@ -63,45 +54,7 @@ function serveStatic(req, res) {
 }
 
 const server = http.createServer((req, res) => {
-  if (req.url.startsWith('/api/create-preference')) {
-    return createPreference(req, res);
-  }
-
-  if (req.url.startsWith('/api/catalog')) {
-    return catalog(req, res);
-  }
-
-  if (req.url.startsWith('/api/order')) {
-    return orderLookup(req, res);
-  }
-
-  if (req.url.startsWith('/api/newsletter')) {
-    return newsletter(req, res);
-  }
-
-  if (req.url.startsWith('/api/admin-orders')) {
-    return adminOrders(req, res);
-  }
-
-  if (req.url.startsWith('/api/admin-dashboard')) {
-    return adminDashboard(req, res);
-  }
-
-  if (req.url.startsWith('/api/admin-leads')) {
-    return adminLeads(req, res);
-  }
-
-  if (req.url.startsWith('/api/admin-products')) {
-    return adminProducts(req, res);
-  }
-
-  if (req.url.startsWith('/api/admin-suppliers')) {
-    return adminSuppliers(req, res);
-  }
-
-  if (req.url.startsWith('/api/mercadopago-webhook') || req.url.startsWith('/api/webhook')) {
-    return mercadopagoWebhook(req, res);
-  }
+  if (req.url.startsWith('/api/') || req.url.startsWith('/webhook')) return routeApi(req, res);
 
   return serveStatic(req, res);
 });

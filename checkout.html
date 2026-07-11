@@ -90,6 +90,7 @@
     const legacyCart = localStorage.getItem('dumke_cart');
     if (legacyCart && !localStorage.getItem('duum_cart')) localStorage.setItem('duum_cart', legacyCart);
     const cart = JSON.parse(localStorage.getItem('duum_cart') || '[]');
+    const account = JSON.parse(localStorage.getItem('duum_account') || 'null');
     const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     let total = 0;
     function renderSummary() {
@@ -140,6 +141,15 @@
       const orderId = params.get('order');
       localStorage.setItem('duum_last_order', orderId);
       document.querySelector('#orderLink').innerHTML = `Pedido: <strong>${orderId}</strong>. <a href="pedido.html?id=${encodeURIComponent(orderId)}">Acompanhar status</a>`;
+    }
+    if (account) {
+      document.querySelector('#name').value = account.name || '';
+      document.querySelector('#email').value = account.email || '';
+      document.querySelector('#phone').value = account.phone || '';
+      document.querySelector('#cep').value = account.cep || '';
+      document.querySelector('#address').value = account.address || '';
+      document.querySelector('#number').value = account.number || '';
+      document.querySelector('#city').value = account.city || '';
     }
 
     checkoutForm.addEventListener('submit', async event => {
