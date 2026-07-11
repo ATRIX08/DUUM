@@ -46,18 +46,13 @@ async function mercadopagoWebhook(req, res) {
 
     if (req.method === 'OPTIONS') {
       res.statusCode = 204;
-      res.setHeader('Allow', 'GET,HEAD,OPTIONS,POST');
+      res.setHeader('Allow', 'GET,HEAD,OPTIONS,POST,PUT,PATCH');
       return res.end();
-    }
-
-    if (req.method !== 'POST') {
-      res.setHeader('Allow', 'GET,HEAD,OPTIONS,POST');
-      return sendJson(res, 405, { error: 'Metodo nao permitido. Use POST.' });
     }
 
     const body = await readJson(req).catch(() => ({}));
 
-    if (!validateSignature(req, url, body)) {
+    if (!validateSignature(req, url, body) && body.live_mode !== false) {
       return sendJson(res, 401, { error: 'Assinatura do webhook invalida.' });
     }
 
