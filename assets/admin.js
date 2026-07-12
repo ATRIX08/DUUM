@@ -2,7 +2,7 @@
 
 const state = {
   secret: localStorage.getItem('duum_admin_token') || '',
-  adminLogin: localStorage.getItem('duum_admin_login') || '',
+  adminEmail: localStorage.getItem('duum_admin_email') || '',
   campaigns: [],
   coupons: [],
   customers: [],
@@ -747,7 +747,7 @@ async function saveSupplier(event) {
 }
 
 async function bootstrap() {
-  qs('#adminLogin').value = state.adminLogin;
+  qs('#adminEmail').value = state.adminEmail;
   qs('#adminLogout').hidden = !state.secret;
   if (!state.secret) {
     setStatus('Entre com o e-mail e senha admin para carregar o painel.');
@@ -816,20 +816,20 @@ document.addEventListener('click', async event => {
 qs('#adminLoginForm').addEventListener('submit', async event => {
   event.preventDefault();
   setStatus('Entrando no painel...');
-  const login = qs('#adminLogin').value.trim();
+  const email = qs('#adminEmail').value.trim();
   const password = qs('#adminPassword').value;
   try {
     const response = await fetch('/api/admin-auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ login, password })
+      body: JSON.stringify({ email, password })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Nao foi possivel entrar.');
     state.secret = data.token;
-    state.adminLogin = data.user?.login || login;
+    state.adminEmail = data.user?.email || email;
     localStorage.setItem('duum_admin_token', state.secret);
-    localStorage.setItem('duum_admin_login', state.adminLogin);
+    localStorage.setItem('duum_admin_email', state.adminEmail);
     qs('#adminPassword').value = '';
     qs('#adminLogout').hidden = false;
     await bootstrap();
@@ -841,7 +841,7 @@ qs('#adminLoginForm').addEventListener('submit', async event => {
 qs('#adminLogout').addEventListener('click', () => {
   state.secret = '';
   localStorage.removeItem('duum_admin_token');
-  localStorage.removeItem('duum_admin_login');
+  localStorage.removeItem('duum_admin_email');
   qs('#adminLogout').hidden = true;
   setStatus('Sessao admin encerrada.');
 });

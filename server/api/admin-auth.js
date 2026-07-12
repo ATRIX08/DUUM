@@ -18,25 +18,25 @@ async function adminAuth(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res);
 
   try {
-    const configuredLogin = cleanText(process.env.ADMIN_LOGIN || process.env.ADMIN_EMAIL, 160).toLowerCase();
+    const configuredEmail = cleanText(process.env.ADMIN_EMAIL || process.env.ADMIN_LOGIN, 160).toLowerCase();
     const salt = process.env.ADMIN_PASSWORD_SALT;
     const expectedHash = process.env.ADMIN_PASSWORD_HASH;
-    if (!configuredLogin || !salt || !expectedHash) {
+    if (!configuredEmail || !salt || !expectedHash) {
       return sendJson(res, 500, { error: 'Login admin nao configurado.' });
     }
 
     const body = await readJson(req);
-    const login = cleanText(body.login || body.email, 160).toLowerCase();
+    const email = cleanText(body.email || body.login, 160).toLowerCase();
     const password = String(body.password || '');
     const hash = hashPassword(password, salt);
 
-    if (login !== configuredLogin || !safeEqual(hash, expectedHash)) {
-      return sendJson(res, 401, { error: 'Login ou senha admin invalidos.' });
+    if (email !== configuredEmail || !safeEqual(hash, expectedHash)) {
+      return sendJson(res, 401, { error: 'E-mail ou senha admin invalidos.' });
     }
 
     return sendJson(res, 200, {
-      token: createAdminToken(login),
-      user: { login },
+      token: createAdminToken(email),
+      user: { email },
       expires_in: 43200
     });
   } catch (error) {
