@@ -65,6 +65,10 @@
       failure: ['Pagamento nao concluido', 'Voce pode tentar novamente ou falar com o atendimento DUUM.']
     };
     const current = messages[params.get('status')] || messages.pending;
+    function clearCartAfterPayment() {
+      localStorage.removeItem('duum_cart');
+      localStorage.removeItem('dumke_cart');
+    }
     const labels = {
       pending_payment: 'Aguardando pagamento',
       paid: 'Pagamento aprovado',
@@ -86,7 +90,7 @@
       document.querySelector('#supportLink').href = `https://wa.me/5561999999999?text=${encodeURIComponent(`Ola, preciso de ajuda com meu pedido DUUM ${orderId}.`)}`;
     }
     if (params.get('status') === 'success') {
-      localStorage.removeItem('duum_cart');
+      clearCartAfterPayment();
       document.querySelector('#stepPayment').classList.add('active');
     }
 
@@ -99,9 +103,11 @@
         if (!response.ok) throw new Error(data.error || 'Pedido nao encontrado.');
         const order = data.order;
         const needsPayment = ['pending_payment', 'payment_rejected'].includes(order.status) || ['pending', 'rejected'].includes(order.payment_status);
+        const paid = ['paid', 'preparing', 'shipped', 'delivered'].includes(order.status) || order.payment_status === 'approved';
         if (['paid', 'preparing', 'shipped', 'delivered'].includes(order.status)) document.querySelector('#stepPayment').classList.add('active');
         if (['shipped', 'delivered'].includes(order.status)) document.querySelector('#stepShipping').classList.add('active');
         if (order.status === 'delivered') document.querySelector('#stepDelivery').classList.add('active');
+        if (paid) clearCartAfterPayment();
         if (needsPayment && order.checkout_url) {
           const payNow = document.querySelector('#payNowLink');
           payNow.href = order.checkout_url;

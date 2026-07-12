@@ -186,6 +186,12 @@
     const checkoutForm = document.querySelector('#checkoutForm');
     const checkoutButton = checkoutForm.querySelector('button[type="submit"]');
     const params = new URLSearchParams(window.location.search);
+    function clearCartAfterPayment() {
+      localStorage.removeItem('duum_cart');
+      localStorage.removeItem('dumke_cart');
+      cart = [];
+      renderSummary();
+    }
     if (params.get('recover_cart')) {
       checkoutStatus.textContent = 'Sacola recuperada. Confira seus dados para finalizar.';
       checkoutStatus.classList.add('success');
@@ -199,7 +205,7 @@
       checkoutStatus.textContent = statusMessages[params.get('status')];
       checkoutStatus.classList.add(params.get('status'));
       if (params.get('status') === 'success') {
-        localStorage.removeItem('duum_cart');
+        clearCartAfterPayment();
       }
     }
     if (params.get('order')) {
