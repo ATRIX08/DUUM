@@ -89,7 +89,7 @@
     };
     const legacyCart = localStorage.getItem('dumke_cart');
     if (legacyCart && !localStorage.getItem('duum_cart')) localStorage.setItem('duum_cart', legacyCart);
-    const cart = JSON.parse(localStorage.getItem('duum_cart') || '[]');
+    let cart = JSON.parse(localStorage.getItem('duum_cart') || '[]');
     const account = JSON.parse(localStorage.getItem('duum_account') || 'null');
     const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     let total = 0;
@@ -136,10 +136,60 @@
         console.warn('Resumo local carregado.', error);
       }
     }
+
+    let abandonTimer;
+    function scheduleAbandonedCartCapture() {
+      clearTimeout(abandonTimer);
+      abandonTimer = setTimeout(captureAbandonedCart, 900);
+    }
+
+    async function captureAbandonedCart() {
+      const email = document.querySelector('#email').value.trim();
+      if (!email || !cart.length) return;
+      try {
+        await fetch('/api/abandoned-cart', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            email,
+            name: document.querySelector('#name').value,
+            phone: document.querySelector('#phone').value,
+            coupon: document.querySelector('#coupon').value,
+            cart
+          })
+        });
+      } catch (error) {
+        console.warn('Carrinho abandonado nao registrado.', error);
+      }
+    }
+
+    async function recoverCartFromLink() {
+      const token = params.get('recover_cart');
+      if (!token) return;
+      try {
+        const response = await fetch(`/api/abandoned-cart?token=${encodeURIComponent(token)}`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Nao foi possivel recuperar a sacola.');
+        cart = Array.isArray(data.cart.cart) ? data.cart.cart : [];
+        localStorage.setItem('duum_cart', JSON.stringify(cart));
+        document.querySelector('#email').value = data.cart.email || '';
+        document.querySelector('#name').value = data.cart.customer_name || '';
+        document.querySelector('#phone').value = data.cart.phone || '';
+        document.querySelector('#coupon').value = data.cart.coupon_code || '';
+        renderSummary();
+      } catch (error) {
+        checkoutStatus.textContent = error.message;
+        checkoutStatus.className = 'checkout-status failure';
+      }
+    }
     const checkoutStatus = document.querySelector('#checkoutStatus');
     const checkoutForm = document.querySelector('#checkoutForm');
     const checkoutButton = checkoutForm.querySelector('button[type="submit"]');
     const params = new URLSearchParams(window.location.search);
+    if (params.get('recover_cart')) {
+      checkoutStatus.textContent = 'Sacola recuperada. Confira seus dados para finalizar.';
+      checkoutStatus.classList.add('success');
+    }
     const statusMessages = {
       success: 'Pagamento aprovado. Obrigado por comprar na DUUM.',
       pending: 'Pagamento pendente. Assim que o Mercado Pago confirmar, o pedido sera atualizado.',
@@ -224,6 +274,7 @@
       }
     });
     document.querySelector('#coupon').addEventListener('input', renderSummary);
+    ['name','email','phone','coupon'].forEach(id => document.querySelector('#' + id).addEventListener('input', scheduleAbandonedCartCapture));
     document.querySelector('#cep').addEventListener('blur', async event => {
       const cep = event.target.value.replace(/\D/g, '');
       const hint = document.querySelector('#cepHint');
@@ -243,6 +294,7 @@
     });
     renderSummary();
     loadCatalog();
+    recoverCartFromLink();
   </script>
 </body>
 </html>

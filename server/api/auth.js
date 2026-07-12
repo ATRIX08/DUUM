@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { cleanText } = require('./_admin');
 const { hasDatabase, query, withTransaction } = require('./_db');
+const { passwordResetTemplate, sendTransactionalEmail } = require('./_email');
 const { methodNotAllowed, readJson, sendJson } = require('./_http');
 
 function isEmail(value) {
@@ -12,6 +13,10 @@ function isEmail(value) {
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   const hash = crypto.pbkdf2Sync(String(password), salt, 120000, 32, 'sha256').toString('hex');
   return { hash, salt };
+}
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
 }
 
 function safeCustomer(row) {
@@ -83,6 +88,70 @@ async function login(body) {
   return safeCustomer(row);
 }
 
+function getBaseUrl(req) {
+  const host = req.headers.host || '';
+  if (process.env.PUBLIC_BASE_URL) return process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, '');
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '');
+  const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
+  return host ? `${protocol}://${host}` : '';
+}
+
+async function requestReset(body, req) {
+  const email = cleanText(body.email, 160).toLowerCase();
+  if (!isEmail(email)) throw new Error('E-mail invalido.');
+
+  const account = await query('select id, email from customer_accounts where email = $1', [email]);
+  if (!account.rows.length) return { sent: true };
+
+  const token = crypto.randomBytes(28).toString('hex');
+  await query(
+    `insert into password_reset_tokens (account_id, token_hash, expires_at)
+     values ($1, $2, now() + interval '30 minutes')`,
+    [account.rows[0].id, hashToken(token)]
+  );
+
+  const link = `${getBaseUrl(req)}/resetar-senha.html?token=${encodeURIComponent(token)}`;
+  const emailResult = await sendTransactionalEmail({
+    to: email,
+    subject: 'Recuperacao de senha DUUM',
+    html: passwordResetTemplate(link)
+  }).catch(() => ({ skipped: true }));
+
+  return { sent: true, reset_link: emailResult.skipped ? link : undefined };
+}
+
+async function resetPassword(body) {
+  const token = cleanText(body.token, 120);
+  const password = String(body.password || '');
+  if (!token) throw new Error('Token invalido.');
+  if (password.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
+
+  const result = await query(
+    `select t.id, t.account_id
+     from password_reset_tokens t
+     where t.token_hash = $1
+       and t.used_at is null
+       and t.expires_at > now()`,
+    [hashToken(token)]
+  );
+  if (!result.rows.length) throw new Error('Link expirado ou invalido.');
+
+  const credentials = hashPassword(password);
+  await withTransaction(async client => {
+    await client.query(
+      `update customer_accounts
+       set password_hash = $2,
+           password_salt = $3,
+           updated_at = now()
+       where id = $1`,
+      [result.rows[0].account_id, credentials.hash, credentials.salt]
+    );
+    await client.query('update password_reset_tokens set used_at = now() where id = $1', [result.rows[0].id]);
+  });
+  return { reset: true };
+}
+
 async function auth(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res);
   if (!hasDatabase()) return sendJson(res, 500, { error: 'Banco nao configurado.' });
@@ -90,6 +159,8 @@ async function auth(req, res) {
   try {
     const body = await readJson(req);
     const action = cleanText(body.action, 20);
+    if (action === 'request_reset') return sendJson(res, 200, await requestReset(body, req));
+    if (action === 'reset_password') return sendJson(res, 200, await resetPassword(body));
     const user = action === 'register' ? await register(body) : action === 'login' ? await login(body) : null;
     if (!user) return sendJson(res, 400, { error: 'Acao invalida.' });
     return sendJson(res, 200, { user });

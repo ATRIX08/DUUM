@@ -226,6 +226,34 @@ async function submitAuth(event) {
   }
 }
 
+async function requestPasswordReset() {
+  const email = document.querySelector('#authEmail').value.trim();
+  const status = document.querySelector('#authStatus');
+  if (!email) {
+    status.textContent = 'Digite seu e-mail acima para recuperar a senha.';
+    status.className = 'checkout-status failure';
+    return;
+  }
+  status.textContent = 'Enviando recuperacao...';
+  status.className = 'checkout-status';
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action: 'request_reset', email })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Nao foi possivel enviar.');
+    status.innerHTML = data.reset_link
+      ? `Link de teste: <a href="${safeText(data.reset_link)}">redefinir senha</a>`
+      : 'Enviamos um link de recuperacao para seu e-mail.';
+    status.className = 'checkout-status success';
+  } catch (error) {
+    status.textContent = error.message;
+    status.className = 'checkout-status failure';
+  }
+}
+
 function openProduct(id) {
   const product = products.find(entry => entry.id === id);
   const sizes = productSizes(product);
@@ -315,6 +343,7 @@ document.querySelector('#closeAccount').addEventListener('click', () => accountD
 document.querySelector('#toggleAuth').addEventListener('click', () => {
   setAuthMode(document.querySelector('#authMode').value === 'register' ? 'login' : 'register');
 });
+document.querySelector('#forgotPassword').addEventListener('click', requestPasswordReset);
 document.querySelector('#logoutBtn').addEventListener('click', () => {
   account = null;
   localStorage.removeItem('duum_account');

@@ -574,14 +574,16 @@ function renderLeads() {
   const leads = state.leads.filter(lead => includesAny(lead, state.filters.leads, ['email', 'source', 'coupon_code']));
   qs('#leadsTable').innerHTML = `
     <table>
-      <thead><tr><th>E-mail</th><th>Origem</th><th>Cupom</th><th>Cadastro</th></tr></thead>
+      <thead><tr><th>E-mail</th><th>Origem</th><th>Cupom</th><th>Valor</th><th>Status</th><th>Cadastro</th></tr></thead>
       <tbody>${leads.map(lead => `
         <tr>
           <td>${escapeHtml(lead.email)}</td>
           <td>${escapeHtml(lead.source || '-')}</td>
           <td><span class="pill">${escapeHtml(lead.coupon_code || '-')}</span></td>
+          <td>${lead.subtotal ? money(lead.subtotal) : '-'}</td>
+          <td>${lead.status ? `<span class="pill">${escapeHtml(lead.status)}</span>` : '-'}</td>
           <td>${dateTime(lead.created_at)}</td>
-        </tr>`).join('') || '<tr><td colspan="4">Nenhum lead encontrado.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="6">Nenhum lead encontrado.</td></tr>'}</tbody>
     </table>`;
 }
 

@@ -26,8 +26,18 @@ function shippedTemplate(orderId, carrier, tracking) {
   return `<h1>Pedido enviado</h1><p>Seu pedido <strong>${orderId}</strong> foi enviado.</p><p>Transportadora: <strong>${carrier || '-'}</strong></p><p>Rastreio: <strong>${tracking || '-'}</strong></p>`;
 }
 
+function passwordResetTemplate(link) {
+  return `<h1>Recuperar senha DUUM</h1><p>Use o botao abaixo para criar uma nova senha.</p><p><a href="${link}">Redefinir senha</a></p><p>Este link expira em 30 minutos.</p>`;
+}
+
+function abandonedCartTemplate(link, total) {
+  return `<h1>Sua sacola DUUM ficou esperando</h1><p>Voce deixou uma selecao na sacola.</p><p>Total estimado: <strong>${total}</strong></p><p><a href="${link}">Voltar para finalizar</a></p>`;
+}
+
 module.exports = {
+  abandonedCartTemplate,
   orderCreatedTemplate,
+  passwordResetTemplate,
   sendTransactionalEmail,
   shippedTemplate
 };

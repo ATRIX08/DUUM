@@ -69,9 +69,9 @@ async function createPreference(req, res) {
 
     if (baseUrl) {
       preference.back_urls = {
-        success: `${baseUrl}/checkout.html?status=success&order=${orderId}`,
-        failure: `${baseUrl}/checkout.html?status=failure&order=${orderId}`,
-        pending: `${baseUrl}/checkout.html?status=pending&order=${orderId}`
+        success: `${baseUrl}/obrigado.html?status=success&order=${orderId}`,
+        failure: `${baseUrl}/obrigado.html?status=failure&order=${orderId}`,
+        pending: `${baseUrl}/obrigado.html?status=pending&order=${orderId}`
       };
 
       if (baseUrl.startsWith('https://')) {

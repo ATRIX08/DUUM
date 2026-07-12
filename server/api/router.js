@@ -11,6 +11,7 @@ const adminProducts = require('./admin-products');
 const adminReports = require('./admin-reports');
 const adminReviews = require('./admin-reviews');
 const adminSuppliers = require('./admin-suppliers');
+const abandonedCart = require('./abandoned-cart');
 const auth = require('./auth');
 const campaigns = require('./campaigns');
 const catalog = require('./catalog');
@@ -35,6 +36,7 @@ function routeApi(req, res) {
   if (pathname === '/api/customer-orders') return customerOrders(req, res);
   if (pathname === '/api/newsletter') return newsletter(req, res);
   if (pathname === '/api/auth') return auth(req, res);
+  if (pathname === '/api/abandoned-cart') return abandonedCart(req, res);
   if (pathname === '/api/admin-campaigns') return adminCampaigns(req, res);
   if (pathname === '/api/admin-dashboard') return adminDashboard(req, res);
   if (pathname === '/api/admin-coupons') return adminCoupons(req, res);

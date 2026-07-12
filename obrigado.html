@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Resumo do pedido DUUM, status de pagamento, entrega e rastreamento.">
+  <meta name="robots" content="noindex">
+  <title>Pedido recebido | DUUM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="topbar">Obrigado por comprar na DUUM</div>
+  <header class="header">
+    <a class="logo" href="index.html">DUUM<span>CURATED WEAR</span></a>
+    <a class="back-link" href="pedido.html">Rastrear pedido</a>
+  </header>
+  <main class="checkout-page thanks-page">
+    <section class="checkout-box">
+      <span class="eyebrow">PEDIDO</span>
+      <h1 id="thanksTitle">Pedido recebido</h1>
+      <p class="summary-note" id="thanksMessage">Estamos conferindo as informacoes do pagamento.</p>
+      <div class="order-timeline">
+        <span class="active">Pedido criado</span>
+        <span id="stepPayment">Pagamento</span>
+        <span id="stepShipping">Envio</span>
+        <span id="stepDelivery">Entrega</span>
+      </div>
+      <div class="hero-actions">
+        <a class="secondary-btn" id="trackLink" href="pedido.html">Acompanhar pedido</a>
+        <a class="ghost-btn dark" href="index.html">Continuar comprando</a>
+      </div>
+      <p class="checkout-status" id="thanksStatus" aria-live="polite"></p>
+    </section>
+    <aside class="checkout-box checkout-summary">
+      <h2>Resumo</h2>
+      <div id="thanksSummary"><p class="summary-note">Carregando pedido...</p></div>
+    </aside>
+  </main>
+  <script>
+    const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('order') || localStorage.getItem('duum_last_order') || '';
+    const messages = {
+      success: ['Pagamento aprovado', 'Recebemos seu pagamento. Agora e so acompanhar a separacao e envio.'],
+      pending: ['Pagamento pendente', 'O Mercado Pago ainda esta processando. Atualizaremos o pedido automaticamente.'],
+      failure: ['Pagamento nao concluido', 'Voce pode tentar novamente ou falar com o atendimento DUUM.']
+    };
+    const current = messages[params.get('status')] || messages.pending;
+    document.querySelector('#thanksTitle').textContent = current[0];
+    document.querySelector('#thanksMessage').textContent = current[1];
+    if (orderId) {
+      localStorage.setItem('duum_last_order', orderId);
+      document.querySelector('#trackLink').href = `pedido.html?id=${encodeURIComponent(orderId)}`;
+    }
+    if (params.get('status') === 'success') {
+      localStorage.removeItem('duum_cart');
+      document.querySelector('#stepPayment').classList.add('active');
+    }
+
+    async function loadOrder() {
+      if (!orderId) return;
+      const status = document.querySelector('#thanksStatus');
+      try {
+        const response = await fetch(`/api/order?id=${encodeURIComponent(orderId)}`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Pedido nao encontrado.');
+        const order = data.order;
+        if (['paid', 'preparing', 'shipped', 'delivered'].includes(order.status)) document.querySelector('#stepPayment').classList.add('active');
+        if (['shipped', 'delivered'].includes(order.status)) document.querySelector('#stepShipping').classList.add('active');
+        if (order.status === 'delivered') document.querySelector('#stepDelivery').classList.add('active');
+        document.querySelector('#thanksSummary').innerHTML = `
+          <div class="summary-line"><span>Pedido</span><strong>${order.id}</strong></div>
+          <div class="summary-line"><span>Status</span><strong>${order.status}</strong></div>
+          <div class="summary-line"><span>Pagamento</span><strong>${order.payment_status}</strong></div>
+          <div class="summary-line"><span>Rastreio</span><strong>${order.tracking_code || '-'}</strong></div>
+          <div class="summary-line"><span>Frete</span><strong>${money(order.shipping_fee)}</strong></div>
+          <div class="summary-line total-line"><span>Total</span><strong>${money(order.total_amount)}</strong></div>
+          ${order.items.map(item => `<div class="summary-line"><span>${item.product_name} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
+        `;
+      } catch (error) {
+        status.textContent = error.message;
+        status.className = 'checkout-status failure';
+      }
+    }
+    loadOrder();
+  </script>
+</body>
+</html>

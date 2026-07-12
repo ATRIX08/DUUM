@@ -133,6 +133,31 @@ create table if not exists product_reviews (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists password_reset_tokens (
+  id bigserial primary key,
+  account_id bigint not null references customer_accounts(id) on delete cascade,
+  token_hash text not null unique,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists abandoned_carts (
+  id bigserial primary key,
+  email text not null,
+  customer_name text,
+  phone text,
+  cart jsonb not null default '[]'::jsonb,
+  subtotal numeric(10,2) not null default 0,
+  coupon_code text,
+  status text not null default 'open',
+  recovery_token text not null unique,
+  last_seen_at timestamptz not null default now(),
+  recovered_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_orders_created_at on orders(created_at desc);
 create index if not exists idx_orders_payment_status on orders(payment_status);
 create index if not exists idx_payment_events_provider_payment_id on payment_events(provider_payment_id);
@@ -161,6 +186,9 @@ create index if not exists idx_coupons_active on coupons(active);
 create index if not exists idx_campaigns_active on campaigns(active);
 create index if not exists idx_product_reviews_product_id on product_reviews(product_id);
 create index if not exists idx_product_reviews_approved on product_reviews(approved);
+create index if not exists idx_password_reset_tokens_account_id on password_reset_tokens(account_id);
+create index if not exists idx_abandoned_carts_email on abandoned_carts(email);
+create index if not exists idx_abandoned_carts_status on abandoned_carts(status);
 
 insert into coupons (code, type, value, min_order_amount, active)
 values ('DUUM10', 'percent', 10, 0, true)

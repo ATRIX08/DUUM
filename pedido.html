@@ -77,6 +77,12 @@
         status.textContent = label(order.status);
         status.className = 'checkout-status success';
         result.innerHTML = `
+          <div class="order-timeline compact">
+            <span class="active">Pedido criado</span>
+            <span class="${['paid','preparing','shipped','delivered'].includes(order.status) ? 'active' : ''}">Pagamento</span>
+            <span class="${['shipped','delivered'].includes(order.status) ? 'active' : ''}">Envio</span>
+            <span class="${order.status === 'delivered' ? 'active' : ''}">Entrega</span>
+          </div>
           <div class="summary-line"><span>Pedido</span><strong>${order.id}</strong></div>
           <div class="summary-line"><span>Status</span><strong>${label(order.status)}</strong></div>
           <div class="summary-line"><span>Pagamento</span><strong>${order.payment_status}</strong></div>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Redefinir senha | DUUM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="topbar">Conta DUUM</div>
+  <header class="header">
+    <a class="logo" href="index.html">DUUM<span>CURATED WEAR</span></a>
+    <a class="back-link" href="index.html">Voltar a loja</a>
+  </header>
+  <main class="checkout-page single-page">
+    <section class="checkout-box">
+      <span class="eyebrow">SENHA</span>
+      <h1>Redefinir senha</h1>
+      <p class="summary-note">Crie uma nova senha para acessar sua conta DUUM.</p>
+      <form id="resetForm">
+        <label for="newPassword">Nova senha</label>
+        <input id="newPassword" type="password" minlength="6" autocomplete="new-password" required>
+        <button class="checkout-btn" type="submit">Salvar nova senha</button>
+      </form>
+      <p class="checkout-status" id="resetStatus" aria-live="polite"></p>
+    </section>
+  </main>
+  <script>
+    const token = new URLSearchParams(location.search).get('token') || '';
+    document.querySelector('#resetForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const status = document.querySelector('#resetStatus');
+      status.textContent = 'Salvando senha...';
+      status.className = 'checkout-status';
+      try {
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset_password', token, password: document.querySelector('#newPassword').value })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Nao foi possivel redefinir.');
+        status.textContent = 'Senha atualizada. Voce ja pode entrar na sua conta.';
+        status.className = 'checkout-status success';
+      } catch (error) {
+        status.textContent = error.message;
+        status.className = 'checkout-status failure';
+      }
+    });
+  </script>
+</body>
+</html>
