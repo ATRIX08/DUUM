@@ -43,6 +43,7 @@
         </div>
       </div>
       <div class="hero-actions">
+        <a class="secondary-btn payment-now-btn" id="payNowLink" href="#" hidden>Pagar agora</a>
         <a class="secondary-btn" id="trackLink" href="pedido.html">Acompanhar pedido</a>
         <a class="secondary-btn whatsapp-action" id="supportLink" href="https://wa.me/5561999999999" rel="noopener noreferrer">Falar no WhatsApp</a>
         <a class="ghost-btn dark" href="index.html">Continuar comprando</a>
@@ -97,9 +98,15 @@
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Pedido nao encontrado.');
         const order = data.order;
+        const needsPayment = ['pending_payment', 'payment_rejected'].includes(order.status) || ['pending', 'rejected'].includes(order.payment_status);
         if (['paid', 'preparing', 'shipped', 'delivered'].includes(order.status)) document.querySelector('#stepPayment').classList.add('active');
         if (['shipped', 'delivered'].includes(order.status)) document.querySelector('#stepShipping').classList.add('active');
         if (order.status === 'delivered') document.querySelector('#stepDelivery').classList.add('active');
+        if (needsPayment && order.checkout_url) {
+          const payNow = document.querySelector('#payNowLink');
+          payNow.href = order.checkout_url;
+          payNow.hidden = false;
+        }
         if (order.status === 'paid') {
           document.querySelector('#thanksTitle').textContent = 'Pagamento aprovado';
           document.querySelector('#thanksMessage').textContent = 'Seu pedido entrou na fila de separacao. Vamos avisar quando o envio for liberado.';
