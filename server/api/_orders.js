@@ -2,7 +2,13 @@
 
 const { normalizeCart } = require('./_catalog');
 const { hasDatabase, query, withTransaction } = require('./_db');
-const { orderCreatedTemplate, sendTransactionalEmail } = require('./_email');
+const {
+  companyOrderTemplate,
+  companyPaymentTemplate,
+  orderCreatedTemplate,
+  sendCompanyNotification,
+  sendTransactionalEmail
+} = require('./_email');
 const { calculateShipping } = require('./_shipping');
 
 function cleanText(value, maxLength) {
@@ -152,6 +158,18 @@ async function createPendingOrder({ orderId, cart, customer, coupon }) {
     html: orderCreatedTemplate(orderId, total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
   }).catch(() => null);
 
+  await sendCompanyNotification({
+    subject: `DUUM: novo pedido ${orderId}`,
+    html: companyOrderTemplate({
+      orderId,
+      customer: normalizedCustomer,
+      total,
+      discountCode: couponResult.code,
+      shippingFee,
+      items
+    })
+  }).catch(() => null);
+
   return { orderId, items: mercadoPagoItems, subtotal, shippingFee, shippingMethod: shippingQuote.method, total, discountCode: couponResult.code, discountAmount: couponResult.discountAmount, saved: true };
 }
 
@@ -173,6 +191,7 @@ async function recordPaymentEvent({ paymentId, topic, rawPayload, payment }) {
   const orderId = payment?.external_reference || rawPayload?.external_reference || rawPayload?.metadata?.order_id || null;
   const status = payment?.status || null;
   const statusDetail = payment?.status_detail || null;
+  let approvedNotification = null;
 
   await withTransaction(async client => {
     await client.query(
@@ -214,9 +233,39 @@ async function recordPaymentEvent({ paymentId, topic, rawPayload, payment }) {
            where oi.order_id = $1 and oi.product_id = p.id`,
           [orderId]
         );
+
+        const orderResult = await client.query(
+          `select o.id, o.total_amount, o.payment_status, o.mercado_pago_payment_id,
+                  c.name as customer_name, c.email as customer_email
+           from orders o
+           left join customers c on c.id = o.customer_id
+           where o.id = $1`,
+          [orderId]
+        );
+        const itemsResult = await client.query(
+          `select product_name, quantity, unit_price, total_price
+           from order_items
+           where order_id = $1
+           order by id`,
+          [orderId]
+        );
+
+        if (orderResult.rows[0]) {
+          approvedNotification = {
+            order: orderResult.rows[0],
+            items: itemsResult.rows
+          };
+        }
       }
     }
   });
+
+  if (approvedNotification) {
+    await sendCompanyNotification({
+      subject: `DUUM: pagamento aprovado ${approvedNotification.order.id}`,
+      html: companyPaymentTemplate(approvedNotification)
+    }).catch(() => null);
+  }
 }
 
 module.exports = {

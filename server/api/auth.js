@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const { cleanText } = require('./_admin');
 const { hasDatabase, query, withTransaction } = require('./_db');
-const { passwordResetTemplate, sendTransactionalEmail } = require('./_email');
+const { companyAccountTemplate, passwordResetTemplate, sendCompanyNotification, sendTransactionalEmail } = require('./_email');
 const { methodNotAllowed, readJson, sendJson } = require('./_http');
 
 function isEmail(value) {
@@ -47,7 +47,7 @@ async function register(body) {
 
   const credentials = hashPassword(password);
 
-  return withTransaction(async client => {
+  const user = await withTransaction(async client => {
     const customer = await client.query(
       `insert into customers (name, email, phone)
        values ($1, $2, $3)
@@ -63,6 +63,13 @@ async function register(body) {
 
     return safeCustomer(customer.rows[0]);
   });
+
+  await sendCompanyNotification({
+    subject: `DUUM: nova conta - ${user.name}`,
+    html: companyAccountTemplate(user)
+  }).catch(() => null);
+
+  return user;
 }
 
 async function login(body) {

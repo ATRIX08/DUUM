@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { cleanText } = require('./_admin');
 const { normalizeCart } = require('./_catalog');
 const { hasDatabase, query } = require('./_db');
-const { abandonedCartTemplate, sendTransactionalEmail } = require('./_email');
+const { abandonedCartTemplate, companyAbandonedCartTemplate, sendCompanyNotification, sendTransactionalEmail } = require('./_email');
 const { methodNotAllowed, readJson, sendJson } = require('./_http');
 
 function isEmail(value) {
@@ -100,6 +100,19 @@ async function abandonedCart(req, res) {
       to: email,
       subject: 'Sua sacola DUUM esta salva',
       html: abandonedCartTemplate(link, subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
+    }).catch(() => null);
+
+    await sendCompanyNotification({
+      subject: `DUUM: carrinho abandonado ${email}`,
+      html: companyAbandonedCartTemplate({
+        email,
+        name: cleanText(body.name, 100),
+        phone: cleanText(body.phone, 30),
+        subtotal,
+        coupon: cleanText(body.coupon, 40).toUpperCase(),
+        link,
+        items
+      })
     }).catch(() => null);
 
     return sendJson(res, 200, { tracked: true });

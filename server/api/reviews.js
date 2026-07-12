@@ -2,6 +2,7 @@
 
 const { cleanText } = require('./_admin');
 const { hasDatabase, query } = require('./_db');
+const { companyReviewTemplate, sendCompanyNotification } = require('./_email');
 const { methodNotAllowed, readJson, sendJson } = require('./_http');
 
 function normalizeReview(body) {
@@ -55,7 +56,7 @@ async function createReview(req, res) {
 
   try {
     const review = normalizeReview(await readJson(req));
-    const product = await query('select id from products where id = $1 and active = true', [review.product_id]);
+    const product = await query('select id, name from products where id = $1 and active = true', [review.product_id]);
     if (!product.rows.length) throw new Error('Produto nao encontrado.');
 
     const result = await query(
@@ -64,6 +65,10 @@ async function createReview(req, res) {
        returning id, product_id, customer_name, rating, comment, created_at`,
       [review.product_id, review.customer_name, review.customer_email, review.rating, review.comment]
     );
+    await sendCompanyNotification({
+      subject: `DUUM: nova avaliacao ${review.rating}/5`,
+      html: companyReviewTemplate({ review: result.rows[0], product: product.rows[0] })
+    }).catch(() => null);
     return sendJson(res, 201, { saved: true, review: result.rows[0] });
   } catch (error) {
     return sendJson(res, 400, { error: error.message });
