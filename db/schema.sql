@@ -158,6 +158,23 @@ create table if not exists abandoned_carts (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists app_events (
+  id bigserial primary key,
+  level text not null default 'info',
+  source text not null,
+  message text not null,
+  order_id text references orders(id),
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table app_events add column if not exists level text not null default 'info';
+alter table app_events add column if not exists source text not null default 'app';
+alter table app_events add column if not exists message text not null default 'Evento';
+alter table app_events add column if not exists order_id text references orders(id);
+alter table app_events add column if not exists metadata jsonb not null default '{}'::jsonb;
+alter table app_events add column if not exists created_at timestamptz not null default now();
+
 create index if not exists idx_orders_created_at on orders(created_at desc);
 create index if not exists idx_orders_payment_status on orders(payment_status);
 create index if not exists idx_payment_events_provider_payment_id on payment_events(provider_payment_id);
@@ -189,6 +206,8 @@ create index if not exists idx_product_reviews_approved on product_reviews(appro
 create index if not exists idx_password_reset_tokens_account_id on password_reset_tokens(account_id);
 create index if not exists idx_abandoned_carts_email on abandoned_carts(email);
 create index if not exists idx_abandoned_carts_status on abandoned_carts(status);
+create index if not exists idx_app_events_created_at on app_events(created_at desc);
+create index if not exists idx_app_events_level on app_events(level);
 
 insert into coupons (code, type, value, min_order_amount, active)
 values ('DUUM10', 'percent', 10, 0, true)

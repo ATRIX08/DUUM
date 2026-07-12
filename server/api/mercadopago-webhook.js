@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { logEvent } = require('./_observability');
 const { readJson, sendJson } = require('./_http');
 const { recordPaymentEvent } = require('./_orders');
 
@@ -54,6 +55,12 @@ async function mercadopagoWebhook(req, res) {
     const body = await readJson(req).catch(() => ({}));
 
     if (!validateSignature(req, url, body) && body.live_mode !== false) {
+      await logEvent({
+        level: 'error',
+        source: 'mercadopago.webhook',
+        message: 'Assinatura do webhook invalida',
+        metadata: { body, headers: { request_id: req.headers['x-request-id'] } }
+      });
       return sendJson(res, 401, { error: 'Assinatura do webhook invalida.' });
     }
 
@@ -63,6 +70,7 @@ async function mercadopagoWebhook(req, res) {
     if (body.live_mode === false) {
       console.log('[Mercado Pago webhook simulation]', { topic, paymentId });
       await recordPaymentEvent({ paymentId, topic, rawPayload: body, payment: null });
+      await logEvent({ level: 'info', source: 'mercadopago.webhook', message: 'Simulacao recebida', metadata: { topic, paymentId } });
       return sendJson(res, 200, { received: true, simulation: true });
     }
 
@@ -74,6 +82,13 @@ async function mercadopagoWebhook(req, res) {
       });
       const payment = await response.json().catch(() => ({}));
       await recordPaymentEvent({ paymentId, topic, rawPayload: body, payment });
+      await logEvent({
+        level: payment.status === 'approved' ? 'info' : 'warning',
+        source: 'mercadopago.webhook',
+        message: `Pagamento ${payment.status || 'atualizado'}`,
+        orderId: payment.external_reference || null,
+        metadata: { paymentId, status_detail: payment.status_detail }
+      });
       console.log('[Mercado Pago webhook]', {
         paymentId,
         status: payment.status,
@@ -82,12 +97,14 @@ async function mercadopagoWebhook(req, res) {
       });
     } else {
       await recordPaymentEvent({ paymentId, topic, rawPayload: body, payment: null });
+      await logEvent({ level: 'warning', source: 'mercadopago.webhook', message: 'Webhook sem pagamento consultado', metadata: { topic, paymentId } });
       console.log('[Mercado Pago webhook]', { topic, paymentId, body });
     }
 
     return sendJson(res, 200, { received: true });
   } catch (error) {
     console.error('[Mercado Pago webhook error]', error);
+    await logEvent({ level: 'error', source: 'mercadopago.webhook', message: error.message || 'Erro no webhook', metadata: { stack: error.stack } });
     return sendJson(res, 200, { received: true });
   }
 }

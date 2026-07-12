@@ -22,6 +22,7 @@ const state = {
   },
   leads: [],
   orders: [],
+  observability: null,
   products: [],
   reports: null,
   reportDays: 30,
@@ -484,6 +485,56 @@ async function loadReports() {
   renderReports();
 }
 
+async function loadObservability() {
+  const data = await api('/api/admin-observability');
+  state.observability = data;
+  renderObservability();
+}
+
+function renderObservability() {
+  const counts = state.observability?.counts || {};
+  qs('#observabilityCards').innerHTML = `
+    <div><small>Erros 24h</small><strong>${counts.errors_24h || 0}</strong>${metricTrend('Eventos criticos', 'Ultimo dia')}</div>
+    <div><small>Pedidos pendentes</small><strong>${counts.pending_orders || 0}</strong>${metricTrend('Mais de 30 min', 'Revisar')}</div>
+    <div><small>Logs webhook</small><strong>${counts.webhook_logs_24h || 0}</strong>${metricTrend('Mercado Pago', '24h')}</div>
+    <div><small>Eventos recentes</small><strong>${(state.observability?.events || []).length}</strong>${metricTrend('Auditoria', 'Ultimos registros')}</div>`;
+  qs('#eventsTable').innerHTML = `
+    <table>
+      <thead><tr><th>Nivel</th><th>Origem</th><th>Mensagem</th><th>Pedido</th><th>Data</th></tr></thead>
+      <tbody>${(state.observability?.events || []).map(event => `
+        <tr>
+          <td><span class="pill ${event.level === 'error' || event.level === 'critical' ? 'stock-danger' : ''}">${escapeHtml(event.level)}</span></td>
+          <td>${escapeHtml(event.source)}</td>
+          <td>${escapeHtml(event.message)}</td>
+          <td>${escapeHtml(event.order_id || '-')}</td>
+          <td>${dateTime(event.created_at)}</td>
+        </tr>`).join('') || '<tr><td colspan="5">Nenhum evento registrado.</td></tr>'}</tbody>
+    </table>`;
+  qs('#pendingOrdersTable').innerHTML = `
+    <table>
+      <thead><tr><th>Pedido</th><th>Total</th><th>Pagamento</th><th>Criado</th></tr></thead>
+      <tbody>${(state.observability?.pendingOrders || []).map(order => `
+        <tr>
+          <td>${escapeHtml(order.id)}</td>
+          <td>${money(order.total_amount)}</td>
+          <td><span class="pill">${escapeHtml(order.payment_status)}</span></td>
+          <td>${dateTime(order.created_at)}</td>
+        </tr>`).join('') || '<tr><td colspan="4">Nenhum pedido pendente antigo.</td></tr>'}</tbody>
+    </table>`;
+  qs('#webhookEventsTable').innerHTML = `
+    <table>
+      <thead><tr><th>Pagamento</th><th>Topico</th><th>Status</th><th>Detalhe</th><th>Data</th></tr></thead>
+      <tbody>${(state.observability?.webhookEvents || []).map(event => `
+        <tr>
+          <td>${escapeHtml(event.provider_payment_id || '-')}</td>
+          <td>${escapeHtml(event.topic || '-')}</td>
+          <td><span class="pill">${escapeHtml(event.status || '-')}</span></td>
+          <td>${escapeHtml(event.status_detail || '-')}</td>
+          <td>${dateTime(event.created_at)}</td>
+        </tr>`).join('') || '<tr><td colspan="5">Nenhum webhook recebido.</td></tr>'}</tbody>
+    </table>`;
+}
+
 function renderReports() {
   const summary = state.reports?.summary || {};
   const stock = state.reports?.stockValue || {};
@@ -695,7 +746,7 @@ async function bootstrap() {
     return;
   }
   setStatus('Carregando painel...');
-  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers(), loadCoupons(), loadCustomers(), loadLeads(), loadCampaigns(), loadReviews(), loadReports()]);
+  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadSuppliers(), loadCoupons(), loadCustomers(), loadLeads(), loadCampaigns(), loadReviews(), loadReports(), loadObservability()]);
   setStatus('Painel carregado.', 'success');
 }
 
@@ -763,6 +814,7 @@ qs('#refreshLeads').addEventListener('click', () => loadLeads().catch(error => s
 qs('#refreshCampaigns').addEventListener('click', () => loadCampaigns().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshReviews').addEventListener('click', () => loadReviews().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshReports').addEventListener('click', () => loadReports().catch(error => setStatus(error.message, 'failure')));
+qs('#refreshObservability').addEventListener('click', () => loadObservability().catch(error => setStatus(error.message, 'failure')));
 qs('#exportReports').addEventListener('click', exportReportsCsv);
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));
 qs('#supplierForm').addEventListener('submit', event => saveSupplier(event).catch(error => setStatus(error.message, 'failure')));

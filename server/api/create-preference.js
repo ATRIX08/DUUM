@@ -1,6 +1,7 @@
 'use strict';
 
 const { methodNotAllowed, readJson, sendJson } = require('./_http');
+const { logEvent } = require('./_observability');
 const { attachPreference, createPendingOrder } = require('./_orders');
 
 const MERCADO_PAGO_API = 'https://api.mercadopago.com/checkout/preferences';
@@ -92,6 +93,13 @@ async function createPreference(req, res) {
     const mpPayload = await mpResponse.json().catch(() => ({}));
 
     if (!mpResponse.ok) {
+      await logEvent({
+        level: 'error',
+        source: 'mercadopago.preference',
+        message: 'Mercado Pago recusou preferencia',
+        orderId,
+        metadata: { status: mpResponse.status, details: mpPayload }
+      });
       return sendJson(res, mpResponse.status, {
         error: 'Mercado Pago recusou a criacao da preferencia.',
         details: mpPayload
@@ -102,6 +110,7 @@ async function createPreference(req, res) {
     const paymentUrl = useSandbox ? (mpPayload.sandbox_init_point || mpPayload.init_point) : mpPayload.init_point;
 
     await attachPreference(orderId, mpPayload.id, paymentUrl);
+    await logEvent({ level: 'info', source: 'mercadopago.preference', message: 'Preferencia criada', orderId, metadata: { preference_id: mpPayload.id } });
 
     return sendJson(res, 200, {
       id: mpPayload.id,
@@ -114,6 +123,7 @@ async function createPreference(req, res) {
       sandbox_init_point: mpPayload.sandbox_init_point
     });
   } catch (error) {
+    await logEvent({ level: 'error', source: 'checkout.preference', message: error.message || 'Erro ao criar pagamento', metadata: { stack: error.stack } });
     return sendJson(res, 400, { error: error.message || 'Nao foi possivel criar o pagamento.' });
   }
 }

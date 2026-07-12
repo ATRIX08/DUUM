@@ -42,6 +42,7 @@
         <button class="admin-tab" data-tab="campaigns"><span>08</span>Campanhas</button>
         <button class="admin-tab" data-tab="reviews"><span>09</span>Avaliacoes</button>
         <button class="admin-tab" data-tab="reports"><span>10</span>Financeiro</button>
+        <button class="admin-tab" data-tab="observability"><span>11</span>Monitoramento</button>
       </nav>
       <div class="admin-sidebar-note">
         <strong>Atalho</strong>
@@ -353,6 +354,40 @@
             </div>
             <div class="admin-table" id="reportsCouponsTable"></div>
           </div>
+        </div>
+      </section>
+
+      <section class="admin-panel" id="observabilityPanel">
+        <div class="admin-panel-head">
+          <div>
+            <span class="panel-kicker">Saude da loja</span>
+            <h2>Monitoramento</h2>
+          </div>
+          <button class="secondary-btn mini" id="refreshObservability">Atualizar</button>
+        </div>
+        <div class="admin-dashboard reports-cards" id="observabilityCards"></div>
+        <div class="admin-two-col">
+          <div class="admin-insight">
+            <div class="admin-section-title">
+              <span>Eventos recentes</span>
+              <small>Erros, avisos e webhooks</small>
+            </div>
+            <div class="admin-table" id="eventsTable"></div>
+          </div>
+          <div class="admin-insight">
+            <div class="admin-section-title">
+              <span>Pedidos pendentes</span>
+              <small>Mais de 30 minutos</small>
+            </div>
+            <div class="admin-table" id="pendingOrdersTable"></div>
+          </div>
+        </div>
+        <div class="admin-insight report-secondary">
+          <div class="admin-section-title">
+            <span>Webhooks Mercado Pago</span>
+            <small>Ultimos eventos recebidos</small>
+          </div>
+          <div class="admin-table" id="webhookEventsTable"></div>
         </div>
       </section>
     </div>

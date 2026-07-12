@@ -12,6 +12,54 @@ let product;
 let reviews = [];
 let reviewSummary = { count: 0, average: 0 };
 
+function setMeta(name, content, property = false) {
+  if (!content) return;
+  const attr = property ? 'property' : 'name';
+  let tag = document.querySelector(`meta[${attr}="${name}"]`);
+  if (!tag) {
+    tag = document.createElement('meta');
+    tag.setAttribute(attr, name);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute('content', content);
+}
+
+function setLink(rel, href) {
+  if (!href) return;
+  let tag = document.querySelector(`link[rel="${rel}"]`);
+  if (!tag) {
+    tag = document.createElement('link');
+    tag.setAttribute('rel', rel);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute('href', href);
+}
+
+async function loadProductMeta() {
+  try {
+    const response = await fetch(`/api/product-meta?id=${encodeURIComponent(id)}`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.meta) return;
+    document.title = data.meta.title;
+    setMeta('description', data.meta.description);
+    setMeta('og:title', data.meta.title, true);
+    setMeta('og:description', data.meta.description, true);
+    setMeta('og:image', data.meta.image, true);
+    setMeta('og:url', data.meta.canonical, true);
+    setLink('canonical', data.meta.canonical);
+    let json = document.querySelector('#productJsonLd');
+    if (!json) {
+      json = document.createElement('script');
+      json.type = 'application/ld+json';
+      json.id = 'productJsonLd';
+      document.head.appendChild(json);
+    }
+    json.textContent = JSON.stringify(data.meta.jsonLd);
+  } catch (error) {
+    console.warn('SEO do produto indisponivel.', error);
+  }
+}
+
 function sizeStock(size) {
   return Number((product.sizeStock || product.size_stock || {})[size] || product.stock || 0);
 }
@@ -135,6 +183,7 @@ fetch('/api/catalog')
     product = (data.products || []).find(item => Number(item.id) === id);
     if (!product) throw new Error('Produto nao encontrado.');
     render();
+    loadProductMeta();
   })
   .catch(error => {
     document.querySelector('#productPage').innerHTML = `<p class="checkout-status failure">${safe(error.message)}</p>`;
