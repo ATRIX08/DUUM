@@ -24,12 +24,14 @@ const state = {
   orders: [],
   products: [],
   reports: null,
+  reportDays: 30,
   reviews: [],
   suppliers: []
 };
 
 const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateTime = value => value ? new Date(value).toLocaleString('pt-BR') : '-';
+const dateOnly = value => value ? new Date(value).toLocaleDateString('pt-BR') : '-';
 const qs = selector => document.querySelector(selector);
 const qsa = selector => Array.from(document.querySelectorAll(selector));
 
@@ -127,6 +129,10 @@ function includesAny(row, query, fields) {
 
 function metricTrend(label, value) {
   return `<small>${escapeHtml(label)}</small><span>${escapeHtml(value)}</span>`;
+}
+
+function percent(value) {
+  return `${Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 }
 
 function activateTab(name) {
@@ -473,7 +479,7 @@ async function toggleReview(id, approved) {
 }
 
 async function loadReports() {
-  const data = await api('/api/admin-reports');
+  const data = await api(`/api/admin-reports?days=${encodeURIComponent(state.reportDays)}`);
   state.reports = data;
   renderReports();
 }
@@ -481,28 +487,87 @@ async function loadReports() {
 function renderReports() {
   const summary = state.reports?.summary || {};
   const stock = state.reports?.stockValue || {};
+  qs('#reportPeriodLabel').textContent = `Ultimos ${state.reports?.period?.days || state.reportDays} dias`;
   qs('#reportsCards').innerHTML = `
     <div><small>Receita paga</small><strong>${money(summary.paid_total)}</strong>${metricTrend('Pedidos aprovados', summary.paid_orders || 0)}</div>
-    <div><small>Lucro estimado</small><strong>${money(summary.estimated_profit)}</strong>${metricTrend('Custo produtos', money(summary.estimated_product_cost))}</div>
-    <div><small>Descontos</small><strong>${money(summary.discount_total)}</strong>${metricTrend('Frete cobrado', money(summary.shipping_total))}</div>
+    <div><small>Lucro estimado</small><strong>${money(summary.estimated_profit)}</strong>${metricTrend('Margem', percent(summary.estimated_margin))}</div>
+    <div><small>Ticket medio</small><strong>${money(summary.average_ticket)}</strong>${metricTrend('Taxa aprovada', percent(summary.paid_rate))}</div>
     <div><small>Estoque ativo</small><strong>${money(stock.stock_sale_value)}</strong>${metricTrend('Custo em estoque', money(stock.stock_cost))}</div>`;
+  renderReportsChart();
   qs('#reportsDailyTable').innerHTML = `
     <table>
-      <thead><tr><th>Dia</th><th>Pedidos</th><th>Receita paga</th></tr></thead>
+      <thead><tr><th>Dia</th><th>Pedidos</th><th>Aprovados</th><th>Receita</th><th>Desconto</th></tr></thead>
       <tbody>${(state.reports?.byDay || []).map(row => `
-        <tr><td>${dateTime(row.day).split(',')[0]}</td><td>${row.orders}</td><td>${money(row.paid_total)}</td></tr>`).join('') || '<tr><td colspan="3">Sem vendas no periodo.</td></tr>'}</tbody>
+        <tr><td>${dateOnly(row.day)}</td><td>${row.orders}</td><td>${row.paid_orders}</td><td>${money(row.paid_total)}</td><td>${money(row.discount_total)}</td></tr>`).join('') || '<tr><td colspan="5">Sem vendas no periodo.</td></tr>'}</tbody>
     </table>`;
   qs('#reportsProductsTable').innerHTML = `
     <table>
-      <thead><tr><th>Produto</th><th>Qtd.</th><th>Receita</th><th>Lucro est.</th></tr></thead>
+      <thead><tr><th>Produto</th><th>Qtd.</th><th>Receita</th><th>Custo</th><th>Lucro est.</th></tr></thead>
       <tbody>${(state.reports?.topProducts || []).map(row => `
         <tr>
           <td>${escapeHtml(row.product_name)}<small>ID ${row.product_id || '-'}</small></td>
           <td>${row.quantity}</td>
           <td>${money(row.revenue)}</td>
+          <td>${money(row.estimated_cost)}</td>
           <td>${money(row.estimated_profit)}</td>
-        </tr>`).join('') || '<tr><td colspan="4">Sem produtos vendidos no periodo.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="5">Sem produtos vendidos no periodo.</td></tr>'}</tbody>
     </table>`;
+  qs('#reportsStatusTable').innerHTML = `
+    <table>
+      <thead><tr><th>Status</th><th>Pedidos</th><th>Total</th></tr></thead>
+      <tbody>${(state.reports?.byStatus || []).map(row => `
+        <tr><td><span class="pill">${escapeHtml(row.status)}</span></td><td>${row.count}</td><td>${money(row.total)}</td></tr>`).join('') || '<tr><td colspan="3">Sem status no periodo.</td></tr>'}</tbody>
+    </table>`;
+  qs('#reportsCouponsTable').innerHTML = `
+    <table>
+      <thead><tr><th>Cupom</th><th>Usos</th><th>Desconto</th><th>Pedidos</th></tr></thead>
+      <tbody>${(state.reports?.coupons || []).map(row => `
+        <tr><td>${escapeHtml(row.code)}</td><td>${row.uses}</td><td>${money(row.discount_total)}</td><td>${money(row.order_total)}</td></tr>`).join('') || '<tr><td colspan="4">Sem cupons no periodo.</td></tr>'}</tbody>
+    </table>`;
+}
+
+function renderReportsChart() {
+  const days = state.reports?.byDay || [];
+  const max = Math.max(...days.map(row => Number(row.paid_total || 0)), 1);
+  qs('#reportsChart').innerHTML = days.map(row => {
+    const value = Number(row.paid_total || 0);
+    const height = Math.max(6, Math.round((value / max) * 140));
+    return `
+      <div class="chart-bar" title="${dateOnly(row.day)} - ${money(value)}">
+        <span style="height:${height}px"></span>
+        <small>${new Date(row.day).getDate()}</small>
+      </div>`;
+  }).join('') || '<p class="empty">Sem dados para montar grafico.</p>';
+}
+
+function csvEscape(value) {
+  const text = String(value ?? '');
+  return /[",;\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function exportReportsCsv() {
+  if (!state.reports) return setStatus('Relatorio ainda nao carregado.', 'failure');
+  const rows = [
+    ['tipo', 'data_produto_status', 'pedidos_qtd', 'receita', 'custo', 'lucro_desconto']
+  ];
+  for (const row of state.reports.byDay || []) {
+    rows.push(['dia', dateOnly(row.day), row.orders, row.paid_total, '', row.discount_total]);
+  }
+  for (const row of state.reports.topProducts || []) {
+    rows.push(['produto', row.product_name, row.quantity, row.revenue, row.estimated_cost, row.estimated_profit]);
+  }
+  for (const row of state.reports.byStatus || []) {
+    rows.push(['status', row.status, row.count, row.total, '', '']);
+  }
+  const csv = rows.map(row => row.map(csvEscape).join(';')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `duum-relatorio-${state.reportDays}-dias.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+  setStatus('CSV exportado.', 'success');
 }
 
 function renderLeads() {
@@ -696,6 +761,7 @@ qs('#refreshLeads').addEventListener('click', () => loadLeads().catch(error => s
 qs('#refreshCampaigns').addEventListener('click', () => loadCampaigns().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshReviews').addEventListener('click', () => loadReviews().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshReports').addEventListener('click', () => loadReports().catch(error => setStatus(error.message, 'failure')));
+qs('#exportReports').addEventListener('click', exportReportsCsv);
 qs('#productForm').addEventListener('submit', event => saveProduct(event).catch(error => setStatus(error.message, 'failure')));
 qs('#supplierForm').addEventListener('submit', event => saveSupplier(event).catch(error => setStatus(error.message, 'failure')));
 qs('#couponForm').addEventListener('submit', event => saveCoupon(event).catch(error => setStatus(error.message, 'failure')));
@@ -750,6 +816,10 @@ qs('#reviewSearch').addEventListener('input', event => {
 qs('#reviewStatusFilter').addEventListener('change', event => {
   state.filters.reviewStatus = event.target.value;
   renderReviews();
+});
+qs('#reportPeriod').addEventListener('change', event => {
+  state.reportDays = Number(event.target.value);
+  loadReports().catch(error => setStatus(error.message, 'failure'));
 });
 
 bootstrap().catch(error => setStatus(error.message, 'failure'));
