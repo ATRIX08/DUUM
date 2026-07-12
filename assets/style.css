@@ -231,6 +231,10 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .review-card p{color:var(--muted);line-height:1.65;margin:10px 0 0}
 .order-card{display:block;text-decoration:none;color:var(--ink);border:1px solid var(--line);padding:13px;margin:10px 0;background:#fff}
 .order-card span,.order-card small{display:block;color:var(--muted);margin-top:5px}
+.payment-alert{margin:14px 0 18px;padding:16px;border:1px solid #f6c35b;background:#fff8e6;border-radius:8px;box-shadow:0 12px 26px rgba(138,91,0,.08)}
+.payment-alert strong{display:block;color:#7a4b00;font-size:16px;margin-bottom:6px}
+.payment-alert span,.payment-alert small{display:block;color:#7a5b22;font-size:13px;line-height:1.5;margin-bottom:12px}
+.payment-alert .checkout-btn{width:100%;min-height:48px;text-decoration:none}
 .admin-body{background:#eef2f6;color:#101828}
 .admin-body:before{content:"";position:fixed;inset:0 0 auto;height:360px;background:linear-gradient(135deg,#111827,#214650 58%,#e7f3f4);z-index:-1}
 .admin-top{height:76px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(231,233,238,.82);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10}

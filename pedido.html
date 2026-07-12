@@ -51,6 +51,9 @@
     function label(value) {
       return {
         pending_payment: 'Aguardando pagamento',
+        pending: 'Pendente',
+        approved: 'Aprovado',
+        rejected: 'Recusado',
         paid: 'Pagamento aprovado',
         preparing: 'Pedido em separacao',
         shipped: 'Pedido enviado',
@@ -74,8 +77,9 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Pedido nao encontrado.');
         const order = data.order;
+        const needsPayment = ['pending_payment', 'payment_rejected'].includes(order.status) || ['pending', 'rejected'].includes(order.payment_status);
         status.textContent = label(order.status);
-        status.className = 'checkout-status success';
+        status.className = `checkout-status ${needsPayment ? 'pending' : 'success'}`;
         result.innerHTML = `
           <div class="order-timeline compact">
             <span class="active">Pedido criado</span>
@@ -83,6 +87,13 @@
             <span class="${['shipped','delivered'].includes(order.status) ? 'active' : ''}">Envio</span>
             <span class="${order.status === 'delivered' ? 'active' : ''}">Entrega</span>
           </div>
+          ${needsPayment ? `
+            <div class="payment-alert">
+              <strong>Ainda nao efetuou o pagamento</strong>
+              <span>Seu pedido esta reservado, mas o pagamento ainda nao foi confirmado.</span>
+              ${order.checkout_url ? `<a class="checkout-btn" href="${order.checkout_url}" rel="noopener noreferrer">Pagar agora</a>` : '<small>Link de pagamento indisponivel. Fale com o atendimento DUUM.</small>'}
+            </div>
+          ` : ''}
           <div class="summary-line"><span>Pedido</span><strong>${order.id}</strong></div>
           <div class="summary-line"><span>Status</span><strong>${label(order.status)}</strong></div>
           <div class="summary-line"><span>Pagamento</span><strong>${order.payment_status}</strong></div>
