@@ -67,6 +67,7 @@ create table if not exists order_items (
   order_id text not null references orders(id) on delete cascade,
   product_id integer references products(id),
   product_name text not null,
+  size text,
   quantity integer not null check (quantity > 0),
   unit_price numeric(10,2) not null,
   total_price numeric(10,2) not null
@@ -193,6 +194,7 @@ alter table orders add column if not exists tracking_code text;
 alter table orders add column if not exists admin_notes text;
 alter table orders add column if not exists discount_code text;
 alter table orders add column if not exists discount_amount numeric(10,2) not null default 0;
+alter table order_items add column if not exists size text;
 
 create index if not exists idx_products_active on products(active);
 create index if not exists idx_products_stock_quantity on products(stock_quantity);

@@ -91,7 +91,7 @@
           <div class="summary-line"><span>Frete</span><strong>${money(order.shipping_fee)}</strong></div>
           ${Number(order.discount_amount || 0) > 0 ? `<div class="summary-line"><span>Cupom ${order.discount_code}</span><strong>- ${money(order.discount_amount)}</strong></div>` : ''}
           <div class="summary-line total-line"><span>Total</span><strong>${money(order.total_amount)}</strong></div>
-          ${order.items.map(item => `<div class="summary-line"><span>${item.product_name} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
+          ${order.items.map(item => `<div class="summary-line"><span>${item.product_name}${item.size ? ` - Tam. ${item.size}` : ''} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
         `;
       } catch (error) {
         status.textContent = error.message;

@@ -1,7 +1,8 @@
 'use strict';
 
 const state = {
-  secret: localStorage.getItem('duum_admin_secret') || '',
+  secret: localStorage.getItem('duum_admin_token') || '',
+  adminEmail: localStorage.getItem('duum_admin_email') || '',
   campaigns: [],
   coupons: [],
   customers: [],
@@ -49,7 +50,7 @@ function escapeHtml(value) {
 }
 
 async function api(path, options = {}) {
-  if (!state.secret) throw new Error('Informe a chave admin.');
+  if (!state.secret) throw new Error('Entre com o e-mail e senha admin.');
   const response = await fetch(path, {
     ...options,
     headers: {
@@ -185,6 +186,10 @@ function renderOrders() {
 async function openOrder(id) {
   const data = await api(`/api/admin-orders?id=${encodeURIComponent(id)}`);
   const order = data.order;
+  const phoneDigits = String(order.customer_phone || '').replace(/\D/g, '');
+  const trackUrl = `${location.origin}/pedido.html?id=${encodeURIComponent(order.id)}${order.customer_email ? `&email=${encodeURIComponent(order.customer_email)}` : ''}`;
+  const approvedMessage = `Oi ${order.customer_name || ''}, aqui e a DUUM. Seu pagamento do pedido ${order.id} foi aprovado. Voce pode acompanhar por aqui: ${trackUrl}`;
+  const shippedMessage = `Oi ${order.customer_name || ''}, seu pedido DUUM ${order.id} foi enviado${order.tracking_code ? ` com rastreio ${order.tracking_code}` : ''}. Acompanhe por aqui: ${trackUrl}`;
   qs('#orderDetail').innerHTML = `
     <h3>${escapeHtml(order.id)}</h3>
     <div class="admin-grid">
@@ -201,7 +206,9 @@ async function openOrder(id) {
     </div>
     <div class="action-row admin-shipping-actions">
       <button data-copy-address="${escapeHtml([order.customer_name, order.address, order.number, order.city, order.cep].filter(Boolean).join(' | '))}">Copiar endereco</button>
-      ${order.customer_phone ? `<a class="admin-action-link" href="https://wa.me/${escapeHtml(String(order.customer_phone).replace(/\\D/g, ''))}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+      ${phoneDigits ? `<a class="admin-action-link whatsapp-link" href="https://wa.me/55${escapeHtml(phoneDigits.replace(/^55/, ''))}?text=${encodeURIComponent(approvedMessage)}" target="_blank" rel="noopener noreferrer">WhatsApp aprovado</a>` : ''}
+      ${phoneDigits ? `<a class="admin-action-link whatsapp-link" href="https://wa.me/55${escapeHtml(phoneDigits.replace(/^55/, ''))}?text=${encodeURIComponent(shippedMessage)}" target="_blank" rel="noopener noreferrer">WhatsApp envio</a>` : ''}
+      <button data-copy-tracking="${escapeHtml(trackUrl)}">Copiar link do pedido</button>
     </div>
     <div class="admin-order-form">
       <label>Status operacional</label>
@@ -217,7 +224,7 @@ async function openOrder(id) {
     </div>
     <button class="secondary-btn mini" data-save-order="${escapeHtml(order.id)}">Salvar status</button>
     <h4>Itens</h4>
-    ${order.items.map(item => `<p>${escapeHtml(item.product_name)} x ${item.quantity} - ${money(item.total_price)}</p>`).join('')}
+    ${order.items.map(item => `<p>${escapeHtml(item.product_name)}${item.size ? ` - Tam. ${escapeHtml(item.size)}` : ''} x ${item.quantity} - ${money(item.total_price)}</p>`).join('')}
     <h4>Eventos de pagamento</h4>
     ${order.events.map(event => `<p>${dateTime(event.created_at)} - ${escapeHtml(event.topic || '')} ${escapeHtml(event.status || '')}</p>`).join('') || '<p>Nenhum evento registrado.</p>'}`;
 }
@@ -740,9 +747,10 @@ async function saveSupplier(event) {
 }
 
 async function bootstrap() {
-  qs('#adminSecret').value = state.secret;
+  qs('#adminEmail').value = state.adminEmail;
+  qs('#adminLogout').hidden = !state.secret;
   if (!state.secret) {
-    setStatus('Cole a chave admin para carregar o painel.');
+    setStatus('Entre com o e-mail e senha admin para carregar o painel.');
     return;
   }
   setStatus('Carregando painel...');
@@ -797,12 +805,45 @@ document.addEventListener('click', async event => {
     navigator.clipboard?.writeText(copyAddress.dataset.copyAddress);
     setStatus('Endereco copiado.', 'success');
   }
+
+  const copyTracking = event.target.closest('[data-copy-tracking]');
+  if (copyTracking) {
+    navigator.clipboard?.writeText(copyTracking.dataset.copyTracking);
+    setStatus('Link do pedido copiado.', 'success');
+  }
 });
 
-qs('#saveSecret').addEventListener('click', () => {
-  state.secret = qs('#adminSecret').value.trim();
-  localStorage.setItem('duum_admin_secret', state.secret);
-  bootstrap().catch(error => setStatus(error.message, 'failure'));
+qs('#adminLoginForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  setStatus('Entrando no painel...');
+  const email = qs('#adminEmail').value.trim();
+  const password = qs('#adminPassword').value;
+  try {
+    const response = await fetch('/api/admin-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Nao foi possivel entrar.');
+    state.secret = data.token;
+    state.adminEmail = data.user?.email || email;
+    localStorage.setItem('duum_admin_token', state.secret);
+    localStorage.setItem('duum_admin_email', state.adminEmail);
+    qs('#adminPassword').value = '';
+    qs('#adminLogout').hidden = false;
+    await bootstrap();
+  } catch (error) {
+    setStatus(error.message, 'failure');
+  }
+});
+
+qs('#adminLogout').addEventListener('click', () => {
+  state.secret = '';
+  localStorage.removeItem('duum_admin_token');
+  localStorage.removeItem('duum_admin_email');
+  qs('#adminLogout').hidden = true;
+  setStatus('Sessao admin encerrada.');
 });
 qs('#refreshOrders').addEventListener('click', () => loadOrders().catch(error => setStatus(error.message, 'failure')));
 qs('#refreshDashboard').addEventListener('click', () => loadDashboard().catch(error => setStatus(error.message, 'failure')));

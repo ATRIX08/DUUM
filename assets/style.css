@@ -196,6 +196,11 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .summary-note{color:var(--muted);font-size:13px;line-height:1.6}
 .single-page{grid-template-columns:minmax(0,620px);justify-content:center}
 .thanks-page .ghost-btn.dark{border-color:var(--ink);color:var(--ink);background:#fff}
+.whatsapp-action{background:#12b76a;border-color:#12b76a;color:#fff}
+.post-purchase-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}
+.post-purchase-grid div{border:1px solid var(--line);background:#fff;border-radius:8px;padding:14px;box-shadow:0 10px 24px rgba(17,19,24,.05)}
+.post-purchase-grid strong{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#18222f;margin-bottom:8px}
+.post-purchase-grid span{display:block;color:var(--muted);font-size:12px;line-height:1.5}
 .order-timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:22px 0}
 .order-timeline span{position:relative;display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px;border:1px solid var(--line);border-radius:6px;background:#f8fafc;color:var(--muted);font-size:12px;font-weight:900;text-align:center}
 .order-timeline span.active{background:#ecfdf3;border-color:#bbf7d0;color:#147a3d}
@@ -231,10 +236,11 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .admin-top{height:76px;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(231,233,238,.82);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10}
 .admin-live{display:flex;align-items:center;gap:8px;color:#344054;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
 .admin-live-dot{width:9px;height:9px;border-radius:999px;background:#16a34a;box-shadow:0 0 0 6px rgba(22,163,74,.12)}
-.admin-key{display:flex;gap:8px;align-items:center}
-.admin-key input{width:min(380px,46vw);padding:12px;border:1px solid #cfd4dc;border-radius:4px}
+.admin-key{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.admin-key input{width:min(230px,24vw);padding:12px;border:1px solid #cfd4dc;border-radius:4px}
 .admin-key button,.admin-table button{border:1px solid var(--cta-strong);background:linear-gradient(135deg,var(--cta),var(--cta-strong));color:#fff;border-radius:4px;padding:10px 13px;font-weight:800;cursor:pointer;box-shadow:0 10px 22px rgba(31,122,140,.18)}
 .admin-key button:hover,.admin-table button:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(31,122,140,.28)}
+.admin-key .admin-logout{background:#fff;color:#303642;border-color:#cfd4dc;box-shadow:none}
 .admin-shell{max-width:1480px;margin:0 auto;padding:28px 22px 70px;display:grid;grid-template-columns:286px minmax(0,1fr);gap:22px}
 .admin-sidebar{position:sticky;top:100px;height:calc(100vh - 122px);display:flex;flex-direction:column;gap:14px}
 .admin-sidebar-card{background:linear-gradient(180deg,#111827,#172635);color:#fff;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:22px;box-shadow:0 20px 50px rgba(15,23,42,.22)}
@@ -325,6 +331,7 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
 .admin-order-form textarea{grid-column:span 2;min-height:84px}
 .admin-shipping-actions{margin:10px 0 18px}
 .admin-action-link{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--cta-strong);background:#fff;color:var(--cta-strong);border-radius:4px;padding:9px 12px;font-size:12px;font-weight:900;text-decoration:none}
+.whatsapp-link{border-color:#12b76a;color:#087443;background:#ecfdf3}
 @media(max-width:1180px){
   .header{padding:0 32px}
   .header nav{gap:18px}
@@ -449,10 +456,12 @@ dialog::backdrop{background:rgba(17,19,24,.72)}
   .product-reviews .section-heading{display:block}
   .product-reviews .section-heading strong{display:block;margin-top:10px;font-size:22px}
   .checkout-box{padding:24px 18px}
+  .post-purchase-grid{grid-template-columns:1fr}
   .summary-line{display:grid;grid-template-columns:1fr auto;align-items:start}
   .admin-top{height:auto;gap:14px;align-items:flex-start;flex-direction:column;padding:18px}
   .admin-key{width:100%}
   .admin-key input{width:100%}
+  .admin-key button{flex:1}
   .admin-hero{display:block}
   .report-actions{display:grid;grid-template-columns:1fr;align-items:stretch}
   .report-actions .secondary-btn,.report-actions select{width:100%}

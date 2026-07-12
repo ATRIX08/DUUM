@@ -138,12 +138,13 @@ async function createPendingOrder({ orderId, cart, customer, coupon }) {
 
     for (const item of items) {
       await client.query(
-        `insert into order_items (order_id, product_id, product_name, quantity, unit_price, total_price)
-         values ($1, $2, $3, $4, $5, $6)`,
+        `insert into order_items (order_id, product_id, product_name, size, quantity, unit_price, total_price)
+         values ($1, $2, $3, $4, $5, $6, $7)`,
         [
           orderId,
           item.id,
           item.title,
+          item.size || null,
           item.quantity,
           item.unit_price,
           Number((item.unit_price * item.quantity).toFixed(2))
@@ -225,14 +226,31 @@ async function recordPaymentEvent({ paymentId, topic, rawPayload, payment }) {
       );
 
       if (status === 'approved' && updatedOrder.rowCount > 0 && !wasAlreadyPaid) {
-        await client.query(
-          `update products p
-           set stock_quantity = greatest(0, stock_quantity - oi.quantity),
-               updated_at = now()
-           from order_items oi
-           where oi.order_id = $1 and oi.product_id = p.id`,
+        const soldItems = await client.query(
+          `select product_id, size, sum(quantity)::int as qty
+           from order_items
+           where order_id = $1
+           group by product_id, size`,
           [orderId]
         );
+        for (const sold of soldItems.rows) {
+          await client.query(
+            `update products
+             set stock_quantity = greatest(0, stock_quantity - $3),
+                 size_stock = case
+                   when $2::text is null then size_stock
+                   else jsonb_set(
+                     coalesce(size_stock, '{}'::jsonb),
+                     array[$2::text],
+                     to_jsonb(greatest(0, coalesce((size_stock ->> $2::text)::int, 0) - $3)),
+                     true
+                   )
+                 end,
+                 updated_at = now()
+             where id = $1`,
+            [sold.product_id, sold.size || null, Number(sold.qty || 0)]
+          );
+        }
 
         const orderResult = await client.query(
           `select o.id, o.total_amount, o.payment_status, o.mercado_pago_payment_id,
@@ -243,10 +261,10 @@ async function recordPaymentEvent({ paymentId, topic, rawPayload, payment }) {
           [orderId]
         );
         const itemsResult = await client.query(
-          `select product_name, quantity, unit_price, total_price
-           from order_items
-           where order_id = $1
-           order by id`,
+            `select product_name, size, quantity, unit_price, total_price
+             from order_items
+             where order_id = $1
+             order by id`,
           [orderId]
         );
 

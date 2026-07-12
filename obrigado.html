@@ -28,8 +28,23 @@
         <span id="stepShipping">Envio</span>
         <span id="stepDelivery">Entrega</span>
       </div>
+      <div class="post-purchase-grid">
+        <div>
+          <strong>1. Confirmacao</strong>
+          <span>Voce recebe as atualizacoes por e-mail assim que o status mudar.</span>
+        </div>
+        <div>
+          <strong>2. Separacao</strong>
+          <span>A equipe DUUM confere o pedido e prepara o envio.</span>
+        </div>
+        <div>
+          <strong>3. Rastreio</strong>
+          <span>Quando enviado, o codigo aparece aqui e no acompanhamento.</span>
+        </div>
+      </div>
       <div class="hero-actions">
         <a class="secondary-btn" id="trackLink" href="pedido.html">Acompanhar pedido</a>
+        <a class="secondary-btn whatsapp-action" id="supportLink" href="https://wa.me/5561999999999" rel="noopener noreferrer">Falar no WhatsApp</a>
         <a class="ghost-btn dark" href="index.html">Continuar comprando</a>
       </div>
       <p class="checkout-status" id="thanksStatus" aria-live="polite"></p>
@@ -49,11 +64,25 @@
       failure: ['Pagamento nao concluido', 'Voce pode tentar novamente ou falar com o atendimento DUUM.']
     };
     const current = messages[params.get('status')] || messages.pending;
+    const labels = {
+      pending_payment: 'Aguardando pagamento',
+      paid: 'Pagamento aprovado',
+      preparing: 'Pedido em separacao',
+      shipped: 'Pedido enviado',
+      delivered: 'Pedido entregue',
+      cancelled: 'Pedido cancelado',
+      payment_rejected: 'Pagamento recusado',
+      pending: 'Pendente',
+      approved: 'Aprovado',
+      rejected: 'Recusado'
+    };
+    const label = value => labels[value] || value || '-';
     document.querySelector('#thanksTitle').textContent = current[0];
     document.querySelector('#thanksMessage').textContent = current[1];
     if (orderId) {
       localStorage.setItem('duum_last_order', orderId);
       document.querySelector('#trackLink').href = `pedido.html?id=${encodeURIComponent(orderId)}`;
+      document.querySelector('#supportLink').href = `https://wa.me/5561999999999?text=${encodeURIComponent(`Ola, preciso de ajuda com meu pedido DUUM ${orderId}.`)}`;
     }
     if (params.get('status') === 'success') {
       localStorage.removeItem('duum_cart');
@@ -71,14 +100,22 @@
         if (['paid', 'preparing', 'shipped', 'delivered'].includes(order.status)) document.querySelector('#stepPayment').classList.add('active');
         if (['shipped', 'delivered'].includes(order.status)) document.querySelector('#stepShipping').classList.add('active');
         if (order.status === 'delivered') document.querySelector('#stepDelivery').classList.add('active');
+        if (order.status === 'paid') {
+          document.querySelector('#thanksTitle').textContent = 'Pagamento aprovado';
+          document.querySelector('#thanksMessage').textContent = 'Seu pedido entrou na fila de separacao. Vamos avisar quando o envio for liberado.';
+        }
+        if (order.status === 'shipped') {
+          document.querySelector('#thanksTitle').textContent = 'Pedido enviado';
+          document.querySelector('#thanksMessage').textContent = 'Seu pedido ja esta a caminho. Use o codigo de rastreio para acompanhar a entrega.';
+        }
         document.querySelector('#thanksSummary').innerHTML = `
           <div class="summary-line"><span>Pedido</span><strong>${order.id}</strong></div>
-          <div class="summary-line"><span>Status</span><strong>${order.status}</strong></div>
-          <div class="summary-line"><span>Pagamento</span><strong>${order.payment_status}</strong></div>
+          <div class="summary-line"><span>Status</span><strong>${label(order.status)}</strong></div>
+          <div class="summary-line"><span>Pagamento</span><strong>${label(order.payment_status)}</strong></div>
           <div class="summary-line"><span>Rastreio</span><strong>${order.tracking_code || '-'}</strong></div>
           <div class="summary-line"><span>Frete</span><strong>${money(order.shipping_fee)}</strong></div>
           <div class="summary-line total-line"><span>Total</span><strong>${money(order.total_amount)}</strong></div>
-          ${order.items.map(item => `<div class="summary-line"><span>${item.product_name} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
+          ${order.items.map(item => `<div class="summary-line"><span>${item.product_name}${item.size ? ` - Tam. ${item.size}` : ''} x ${item.quantity}</span><span>${money(item.total_price)}</span></div>`).join('')}
         `;
       } catch (error) {
         status.textContent = error.message;

@@ -30,7 +30,7 @@ async function orderLookup(req, res) {
   }
 
   const items = await query(
-    `select product_name, quantity, unit_price, total_price
+    `select product_name, size, quantity, unit_price, total_price
      from order_items
      where order_id = $1
      order by id asc`,

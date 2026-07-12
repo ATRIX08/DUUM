@@ -18,10 +18,12 @@
       <span class="admin-live-dot"></span>
       Operacao em tempo real
     </div>
-    <div class="admin-key">
-      <input id="adminSecret" type="password" placeholder="Chave admin" autocomplete="off">
-      <button id="saveSecret">Entrar</button>
-    </div>
+    <form class="admin-key" id="adminLoginForm">
+      <input id="adminEmail" type="email" placeholder="E-mail admin" autocomplete="username">
+      <input id="adminPassword" type="password" placeholder="Senha" autocomplete="current-password">
+      <button type="submit">Entrar</button>
+      <button type="button" id="adminLogout" class="admin-logout" hidden>Sair</button>
+    </form>
   </header>
 
   <main class="admin-shell">
