@@ -2,7 +2,7 @@
 
 async function sendTransactionalEmail({ to, subject, html }) {
   const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || 'DUUM <onboarding@resend.dev>';
+  const from = process.env.EMAIL_FROM || 'DUUM <duummoda@gmail.com>';
   if (!key || !to) return { skipped: true };
 
   const response = await fetch('https://api.resend.com/emails', {
